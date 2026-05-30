@@ -1,0 +1,1030 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="description" content="SOLO LIMPO - Jogo de quiz educativo sobre poluição do solo.">
+<title>SOLO LIMPO 🌱 — Quiz sobre Poluição do Solo</title>
+<style>
+/* ===================================================================
+   SOLO LIMPO — Jogo de quiz educativo sobre poluição do solo
+   Tudo em um único arquivo: HTML + CSS + JS puro (sem dependências).
+   =================================================================== */
+
+/* ---------- Variáveis de cor (paleta natureza) ---------- */
+:root{
+  --verde-claro:#7cc36a;
+  --verde:#4caf50;
+  --verde-escuro:#2e7d32;
+  --verde-fundo:#e8f5e9;
+  --terra:#8d6e63;
+  --terra-escura:#5d4037;
+  --amarelo:#ffd54f;
+  --vermelho:#e53935;
+  --texto:#2b3a2b;
+  --branco:#ffffff;
+  --sombra:0 8px 24px rgba(0,0,0,.15);
+  --raio:18px;
+}
+
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+
+html,body{height:100%;}
+
+body{
+  font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  color:var(--texto);
+  /* Fundo em degradê céu -> campo */
+  background:linear-gradient(180deg,#aee7ff 0%,#dff5d8 55%,#cdeac0 100%);
+  min-height:100dvh;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  padding:14px;
+  overflow-x:hidden;
+}
+
+/* ---------- Cartão principal do jogo ---------- */
+#jogo{
+  width:100%;
+  max-width:520px;
+  background:var(--branco);
+  border-radius:var(--raio);
+  box-shadow:var(--sombra);
+  overflow:hidden;
+  position:relative;
+}
+
+/* ---------- Telas (só a .ativa aparece) ---------- */
+.tela{display:none;padding:22px 20px 26px;animation:entra .45s ease;}
+.tela.ativa{display:block;}
+
+@keyframes entra{
+  from{opacity:0;transform:translateY(14px);}
+  to{opacity:1;transform:translateY(0);}
+}
+
+/* ---------- Tipografia ---------- */
+h1{
+  font-size:clamp(2.1rem,9vw,3rem);
+  text-align:center;
+  color:var(--verde-escuro);
+  letter-spacing:1px;
+  text-shadow:0 2px 0 rgba(0,0,0,.06);
+  line-height:1.05;
+}
+h2{font-size:clamp(1.3rem,5vw,1.7rem);color:var(--verde-escuro);text-align:center;}
+.subtitulo{text-align:center;color:var(--terra-escura);margin:10px 0 22px;font-size:1rem;line-height:1.45;}
+
+/* ---------- Botões ---------- */
+.btn{
+  display:inline-flex;align-items:center;justify-content:center;gap:8px;
+  width:100%;
+  min-height:54px;
+  border:none;
+  border-radius:14px;
+  background:var(--verde);
+  color:#fff;
+  font-size:1.15rem;
+  font-weight:700;
+  cursor:pointer;
+  padding:12px 18px;
+  box-shadow:0 5px 0 var(--verde-escuro);
+  transition:transform .08s, box-shadow .08s, filter .15s;
+  margin-top:12px;
+}
+.btn:hover{filter:brightness(1.05);}
+.btn:active{transform:translateY(4px);box-shadow:0 1px 0 var(--verde-escuro);}
+.btn.secundario{
+  background:#fff;color:var(--verde-escuro);
+  box-shadow:0 4px 0 #bdbdbd;border:2px solid var(--verde-fundo);
+}
+.btn.secundario:active{box-shadow:0 1px 0 #bdbdbd;}
+.btn.grande{font-size:1.35rem;min-height:62px;animation:pulsa 2s infinite;}
+
+@keyframes pulsa{
+  0%,100%{transform:scale(1);}
+  50%{transform:scale(1.035);}
+}
+
+/* ---------- Botão de som (canto) ---------- */
+#btnSom{
+  position:absolute;top:12px;right:12px;z-index:5;
+  width:44px;height:44px;border-radius:50%;
+  border:none;background:var(--verde-fundo);
+  font-size:1.3rem;cursor:pointer;line-height:1;
+  box-shadow:0 2px 6px rgba(0,0,0,.12);
+}
+
+/* ===================================================================
+   O SOLO ANIMADO (coração da imersão)
+   =================================================================== */
+.cena-solo{
+  width:100%;height:130px;border-radius:14px;overflow:hidden;
+  margin:14px 0;position:relative;
+  /* céu de fundo */
+  background:linear-gradient(180deg,#bfeaff 0%,#e7f7e0 60%);
+  box-shadow:inset 0 0 0 2px rgba(0,0,0,.04);
+}
+.cena-solo svg{width:100%;height:100%;display:block;}
+
+/* Cada plantinha aparece com animação ao "brotar" */
+.planta{transform-origin:bottom center;transform:scale(0);opacity:0;transition:transform .5s cubic-bezier(.2,1.3,.5,1),opacity .4s;}
+.planta.visivel{transform:scale(1);opacity:1;}
+.planta.balanca{animation:balanca 2.4s ease-in-out infinite;}
+@keyframes balanca{
+  0%,100%{transform:scale(1) rotate(0deg);}
+  50%{transform:scale(1) rotate(4deg);}
+}
+
+/* Lixo que vai sumindo conforme o solo limpa */
+.lixo{transition:opacity .6s, transform .6s;}
+
+/* A faixa de terra muda de cor (marrom seco -> marrom úmido fértil) */
+#faixaTerra{transition:fill 1s;}
+
+/* ===================================================================
+   MAPA DE FASES
+   =================================================================== */
+.trilha{display:flex;flex-direction:column;gap:14px;margin:18px 0;}
+.fase-card{
+  display:flex;align-items:center;gap:14px;
+  padding:16px;border-radius:16px;
+  background:var(--verde-fundo);
+  border:2px solid transparent;
+  cursor:pointer;
+  transition:transform .12s,border-color .2s,opacity .2s;
+}
+.fase-card:active{transform:scale(.98);}
+.fase-card .icone{font-size:2.2rem;width:54px;text-align:center;}
+.fase-card .info{flex:1;}
+.fase-card .info b{display:block;font-size:1.1rem;color:var(--verde-escuro);}
+.fase-card .info small{color:var(--terra-escura);}
+.fase-card.bloqueada{opacity:.55;cursor:not-allowed;background:#eee;}
+.fase-card.concluida{border-color:var(--verde);}
+.fase-card .estrelas-mini{font-size:1rem;letter-spacing:2px;}
+
+/* ===================================================================
+   TELA DE PERGUNTA
+   =================================================================== */
+.topo-jogo{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:8px;flex-wrap:wrap;}
+.placar{font-weight:800;color:var(--verde-escuro);font-size:1.05rem;}
+.combo{
+  background:linear-gradient(90deg,#ff9800,#ff5722);
+  color:#fff;font-weight:800;padding:4px 10px;border-radius:20px;font-size:.9rem;
+  opacity:0;transform:scale(.6);transition:opacity .25s,transform .25s;white-space:nowrap;
+}
+.combo.ativo{opacity:1;transform:scale(1);animation:tremeCombo .4s;}
+@keyframes tremeCombo{0%,100%{transform:scale(1);}50%{transform:scale(1.2);}}
+
+/* Barra de progresso da fase */
+.progresso-wrap{background:#e0e0e0;border-radius:20px;height:14px;overflow:hidden;margin:6px 0 4px;}
+.progresso-barra{height:100%;width:0;background:linear-gradient(90deg,var(--verde-claro),var(--verde));border-radius:20px;transition:width .45s;}
+.contador-perg{text-align:center;font-size:.9rem;color:var(--terra-escura);margin-bottom:6px;}
+
+.enunciado{
+  font-size:clamp(1.1rem,4.2vw,1.35rem);
+  font-weight:700;text-align:center;margin:10px 4px 16px;line-height:1.35;min-height:3em;
+  display:flex;align-items:center;justify-content:center;
+}
+
+/* Alternativas */
+.alternativas{display:flex;flex-direction:column;gap:11px;}
+.alt{
+  min-height:54px;
+  text-align:left;
+  background:#fff;border:2px solid #d7e8d4;border-radius:14px;
+  padding:13px 16px;font-size:1.05rem;cursor:pointer;color:var(--texto);
+  display:flex;align-items:center;gap:10px;
+  transition:transform .1s,border-color .15s,background .2s;
+}
+.alt .letra{
+  flex:0 0 auto;width:30px;height:30px;border-radius:50%;
+  background:var(--verde-fundo);color:var(--verde-escuro);
+  display:flex;align-items:center;justify-content:center;font-weight:800;
+}
+.alt:hover{border-color:var(--verde-claro);}
+.alt:active{transform:scale(.99);}
+.alt.correta{background:#d7f5d2;border-color:var(--verde);animation:pop .3s;}
+.alt.correta .letra{background:var(--verde);color:#fff;}
+.alt.errada{background:#fde0df;border-color:var(--vermelho);}
+.alt.errada .letra{background:var(--vermelho);color:#fff;}
+.alt.bloqueada{pointer-events:none;}
+@keyframes pop{0%{transform:scale(1);}50%{transform:scale(1.04);}100%{transform:scale(1);}}
+
+/* Caixa de feedback */
+.feedback{
+  margin-top:14px;border-radius:14px;padding:14px;font-size:1rem;line-height:1.4;
+  display:none;animation:entra .35s ease;
+}
+.feedback.ok{display:block;background:#e6f7e3;border-left:6px solid var(--verde);}
+.feedback.no{display:block;background:#fdeceb;border-left:6px solid var(--vermelho);}
+.feedback b{display:block;margin-bottom:3px;}
+
+/* Animação de pontos subindo */
+.ponto-flutua{
+  position:absolute;font-weight:900;color:var(--verde-escuro);font-size:1.5rem;
+  pointer-events:none;animation:sobe 1s ease forwards;z-index:10;
+}
+@keyframes sobe{
+  from{opacity:1;transform:translateY(0) scale(1);}
+  to{opacity:0;transform:translateY(-60px) scale(1.4);}
+}
+
+/* Shake na tela ao errar */
+.shake{animation:shake .4s;}
+@keyframes shake{
+  0%,100%{transform:translateX(0);}
+  20%{transform:translateX(-9px);}
+  40%{transform:translateX(9px);}
+  60%{transform:translateX(-6px);}
+  80%{transform:translateX(6px);}
+}
+
+/* ===================================================================
+   TELA DE TRANSIÇÃO / FIM DE FASE / FINAL
+   =================================================================== */
+.centralizado{text-align:center;}
+.icone-grande{font-size:5rem;margin:10px 0;animation:flutua 3s ease-in-out infinite;display:inline-block;}
+@keyframes flutua{0%,100%{transform:translateY(0);}50%{transform:translateY(-12px);}}
+
+.estrelas{font-size:2.6rem;letter-spacing:6px;margin:10px 0;min-height:1em;}
+.estrela{display:inline-block;animation:caiEstrela .5s ease both;}
+@keyframes caiEstrela{from{opacity:0;transform:scale(0) rotate(-40deg);}to{opacity:1;transform:scale(1) rotate(0);}}
+
+.resumo-final{background:var(--verde-fundo);border-radius:14px;padding:18px;margin:14px 0;text-align:center;}
+.resumo-final .num{font-size:2.4rem;font-weight:900;color:var(--verde-escuro);}
+.linha-stat{display:flex;justify-content:space-around;margin-top:10px;flex-wrap:wrap;gap:8px;}
+.linha-stat div{background:#fff;border-radius:12px;padding:10px 14px;min-width:90px;}
+.linha-stat b{display:block;font-size:1.3rem;color:var(--verde-escuro);}
+.linha-stat small{color:var(--terra-escura);}
+
+.mensagem-final{text-align:center;font-size:1.1rem;line-height:1.45;margin:6px 4px 4px;font-weight:600;}
+
+/* ---------- Modal "Como jogar" ---------- */
+.modal-fundo{
+  display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);
+  z-index:50;align-items:center;justify-content:center;padding:18px;
+}
+.modal-fundo.ativo{display:flex;animation:entra .3s;}
+.modal{background:#fff;border-radius:18px;padding:24px;max-width:420px;width:100%;}
+.modal h2{margin-bottom:10px;}
+.modal ul{margin:10px 0 4px;padding-left:20px;line-height:1.6;}
+.modal li{margin-bottom:6px;}
+
+/* Confete */
+.confete{position:absolute;width:10px;height:14px;top:-20px;z-index:20;border-radius:2px;pointer-events:none;animation:cai linear forwards;}
+@keyframes cai{
+  to{transform:translateY(220px) rotate(360deg);opacity:0;}
+}
+
+/* Ajustes responsivos para telas bem pequenas */
+@media (max-width:360px){
+  .tela{padding:18px 14px 22px;}
+  .alt{font-size:1rem;}
+}
+</style>
+</head>
+<body>
+
+<div id="jogo">
+  <!-- Botão liga/desliga som (sempre visível) -->
+  <button id="btnSom" title="Ligar/desligar som" onclick="alternarSom()">🔊</button>
+
+  <!-- ========================= TELA INICIAL ========================= -->
+  <section id="tela-inicial" class="tela ativa centralizado">
+    <div class="icone-grande">🌱</div>
+    <h1>SOLO LIMPO</h1>
+    <p class="subtitulo">A cada resposta certa, você ajuda a curar a terra. 🌍<br>
+      Aprenda sobre a <b>poluição do solo</b> e transforme um campo poluído em vida!</p>
+    <button class="btn grande" onclick="irParaMapa()">▶ JOGAR</button>
+    <button class="btn secundario" onclick="abrirComoJogar()">❓ Como jogar</button>
+  </section>
+
+  <!-- ========================= MAPA DE FASES ========================= -->
+  <section id="tela-mapa" class="tela">
+    <h2>🗺️ Mapa de Fases</h2>
+    <p class="subtitulo">Conclua uma fase para desbloquear a próxima.</p>
+    <div class="trilha" id="trilhaFases"><!-- preenchido via JS --></div>
+    <button class="btn secundario" onclick="mostrarTela('tela-inicial')">⬅ Voltar</button>
+  </section>
+
+  <!-- ===================== TELA DE TRANSIÇÃO DE FASE ===================== -->
+  <section id="tela-transicao" class="tela centralizado">
+    <div class="icone-grande" id="transicaoIcone">🚜</div>
+    <h2 id="transicaoTitulo">Fase 1</h2>
+    <p class="subtitulo" id="transicaoTexto"></p>
+    <button class="btn grande" onclick="iniciarPerguntasDaFase()">CONTINUAR ▶</button>
+  </section>
+
+  <!-- ========================= TELA DE PERGUNTA ========================= -->
+  <section id="tela-pergunta" class="tela">
+    <div class="topo-jogo">
+      <span class="placar">⭐ <span id="placarPontos">0</span> pts</span>
+      <span class="combo" id="indicadorCombo">🔥 sequência x2</span>
+      <span class="placar" id="rotuloFase">Fase 1</span>
+    </div>
+
+    <div class="progresso-wrap"><div class="progresso-barra" id="barraProgresso"></div></div>
+    <div class="contador-perg" id="contadorPergunta">Pergunta 1 de 4</div>
+
+    <!-- O solo que evolui -->
+    <div class="cena-solo" id="cenaSolo"></div>
+
+    <div class="enunciado" id="enunciado">...</div>
+    <div class="alternativas" id="alternativas"><!-- preenchido via JS --></div>
+
+    <div class="feedback" id="feedback"></div>
+    <button class="btn" id="btnProxima" style="display:none" onclick="proximaPergunta()">CONTINUAR ▶</button>
+  </section>
+
+  <!-- ========================= FIM DE FASE ========================= -->
+  <section id="tela-fim-fase" class="tela centralizado">
+    <h2 id="tituloFimFase">Fase concluída!</h2>
+    <div class="estrelas" id="estrelasFase"></div>
+    <p class="subtitulo" id="textoFimFase"></p>
+    <button class="btn grande" id="btnFimFase" onclick="aposFimDeFase()">CONTINUAR ▶</button>
+  </section>
+
+  <!-- ========================= TELA FINAL ========================= -->
+  <section id="tela-final" class="tela centralizado">
+    <div class="icone-grande" id="iconeFinal">🌳</div>
+    <h2>Fim de jogo!</h2>
+    <div class="cena-solo" id="cenaSoloFinal"></div>
+    <div class="estrelas" id="estrelasFinal"></div>
+    <p class="mensagem-final" id="mensagemFinal"></p>
+    <div class="resumo-final">
+      <div class="linha-stat">
+        <div><b id="finalAcertos">0</b><small>de 12 acertos</small></div>
+        <div><b id="finalPontos">0</b><small>pontos</small></div>
+        <div><b id="finalEstrelas">0</b><small>estrelas</small></div>
+      </div>
+    </div>
+    <button class="btn grande" onclick="reiniciarJogo()">🔄 JOGAR DE NOVO</button>
+  </section>
+</div>
+
+<!-- ===================== MODAL COMO JOGAR ===================== -->
+<div class="modal-fundo" id="modalComoJogar">
+  <div class="modal">
+    <h2>❓ Como jogar</h2>
+    <ul>
+      <li>🌍 São <b>12 perguntas</b> em <b>3 fases</b> sobre a poluição do solo.</li>
+      <li>👉 Toque na alternativa que você acha <b>correta</b>.</li>
+      <li>✅ Acertou: ganha pontos e o solo fica mais verde!</li>
+      <li>🔥 Acertos seguidos formam uma <b>sequência</b> e valem bônus.</li>
+      <li>⭐ Cada fase dá até <b>3 estrelas</b> conforme seu desempenho.</li>
+      <li>🌱 Objetivo: limpar o solo e enchê-lo de vida!</li>
+    </ul>
+    <button class="btn" onclick="fecharComoJogar()">ENTENDI 👍</button>
+  </div>
+</div>
+
+<script>
+/* ===================================================================
+   DADOS — as 12 perguntas, divididas em 3 fases de 4 perguntas.
+   "correta" é o índice (0-3) da alternativa certa no array original.
+   =================================================================== */
+const FASES = [
+  {
+    nome:"A Origem do Problema",
+    descricao:"As causas da poluição do solo. Cenário: campo e lavoura. 🚜",
+    icone:"🚜",
+    perguntas:[
+      {
+        enunciado:"O que é poluição do solo?",
+        alternativas:[
+          "Aumento natural da fertilidade",
+          "Presença de substâncias nocivas que degradam o solo",
+          "Plantio de árvores",
+          "Chuva em excesso"
+        ],
+        correta:1,
+        feedback:"Poluição do solo é a presença de substâncias nocivas que degradam suas características e prejudicam a vida."
+      },
+      {
+        enunciado:"Qual destes é uma das principais causas da poluição do solo?",
+        alternativas:[
+          "Reciclagem",
+          "Uso excessivo de agrotóxicos e fertilizantes",
+          "Compostagem",
+          "Rotação de culturas"
+        ],
+        correta:1,
+        feedback:"O uso excessivo de agrotóxicos e fertilizantes contamina o solo com substâncias químicas prejudiciais."
+      },
+      {
+        enunciado:"O descarte incorreto de lixo no solo pode causar:",
+        alternativas:[
+          "Contaminação do solo e da água subterrânea",
+          "Aumento da biodiversidade",
+          "Melhora na qualidade do ar",
+          "Nada, o lixo some sozinho"
+        ],
+        correta:0,
+        feedback:"O lixo descartado de forma incorreta libera substâncias que contaminam o solo e a água subterrânea."
+      },
+      {
+        enunciado:"O desmatamento contribui para a degradação do solo principalmente por:",
+        alternativas:[
+          "Aumentar a erosão e a perda de nutrientes",
+          "Deixar o solo mais úmido",
+          "Aumentar a matéria orgânica",
+          "Não tem relação com o solo"
+        ],
+        correta:0,
+        feedback:"Sem a vegetação que o protege, o solo fica exposto, sofrendo mais erosão e perdendo nutrientes."
+      }
+    ]
+  },
+  {
+    nome:"Os Impactos",
+    descricao:"As consequências da poluição. Cenário: terra degradada. 🏜️",
+    icone:"🏜️",
+    perguntas:[
+      {
+        enunciado:"O que é chorume?",
+        alternativas:[
+          "Um tipo de adubo natural",
+          "Líquido tóxico produzido pela decomposição do lixo",
+          "Água da chuva",
+          "Um pesticida orgânico"
+        ],
+        correta:1,
+        feedback:"O chorume é o líquido escuro e tóxico gerado pela decomposição do lixo, que pode contaminar o solo e a água."
+      },
+      {
+        enunciado:"Os metais pesados (como chumbo e mercúrio) no solo são perigosos porque:",
+        alternativas:[
+          "Evaporam rapidamente",
+          "São facilmente eliminados pelas plantas",
+          "Acumulam-se nos seres vivos pela cadeia alimentar",
+          "Tornam o solo mais fértil"
+        ],
+        correta:2,
+        feedback:"Metais pesados se acumulam nos organismos ao longo da cadeia alimentar, processo chamado bioacumulação."
+      },
+      {
+        enunciado:"Resíduos plásticos no solo são um problema porque:",
+        alternativas:[
+          "Se decompõem em poucos dias",
+          "Demoram centenas de anos para se decompor",
+          "Servem de alimento para as plantas",
+          "Aumentam a fertilidade"
+        ],
+        correta:1,
+        feedback:"O plástico leva centenas de anos para se decompor, acumulando-se e degradando o solo por muito tempo."
+      },
+      {
+        enunciado:"Qual consequência a poluição do solo pode trazer para a saúde humana?",
+        alternativas:[
+          "Melhora da imunidade",
+          "Contaminação por alimentos e água poluídos",
+          "Nenhuma consequência",
+          "Aumento da expectativa de vida"
+        ],
+        correta:1,
+        feedback:"O solo poluído contamina alimentos e a água, podendo causar doenças nas pessoas que os consomem."
+      }
+    ]
+  },
+  {
+    nome:"A Solução",
+    descricao:"Prevenção e cuidado: o solo se recuperando. 🌱",
+    icone:"🌱",
+    perguntas:[
+      {
+        enunciado:"Qual prática AJUDA a reduzir a poluição do solo?",
+        alternativas:[
+          "Queimadas",
+          "Despejo de esgoto sem tratamento",
+          "Compostagem de resíduos orgânicos",
+          "Uso intensivo de plástico"
+        ],
+        correta:2,
+        feedback:"A compostagem transforma resíduos orgânicos em adubo, reduzindo o lixo e enriquecendo o solo."
+      },
+      {
+        enunciado:"Aterro sanitário se diferencia de um lixão porque:",
+        alternativas:[
+          "É a céu aberto e sem controle",
+          "Possui impermeabilização e tratamento do chorume e gases",
+          "Não recebe lixo",
+          "Polui mais que o lixão"
+        ],
+        correta:1,
+        feedback:"O aterro sanitário tem impermeabilização e trata o chorume e os gases, evitando a contaminação do solo."
+      },
+      {
+        enunciado:"A erosão do solo é:",
+        alternativas:[
+          "O processo de desgaste e perda da camada fértil",
+          "O aumento da vegetação",
+          "A formação de novas rochas",
+          "A criação de rios"
+        ],
+        correta:0,
+        feedback:"Erosão é o desgaste e a perda da camada fértil do solo, geralmente causada por água, vento ou desmatamento."
+      },
+      {
+        enunciado:"Uma forma de prevenir a poluição do solo é:",
+        alternativas:[
+          "Jogar óleo de cozinha na terra",
+          "Separar e reciclar o lixo corretamente",
+          "Usar mais agrotóxicos",
+          "Aterrar pilhas e baterias no quintal"
+        ],
+        correta:1,
+        feedback:"Separar e reciclar o lixo evita que materiais poluentes cheguem ao solo e à água."
+      }
+    ]
+  }
+];
+
+const TOTAL_PERGUNTAS = 12;           // 3 fases x 4 perguntas
+const PONTOS_BASE = 100;              // pontos por acerto
+const BONUS_COMBO = 25;               // pontos extras por nível de sequência
+
+/* ===================================================================
+   ESTADO DO JOGO
+   =================================================================== */
+let estado = {};
+
+function estadoInicial(){
+  return {
+    faseAtual:0,            // índice da fase (0,1,2)
+    perguntaAtual:0,        // índice da pergunta dentro da fase (0-3)
+    pontos:0,               // pontos totais
+    acertos:0,              // acertos totais
+    acertosNaFase:0,        // acertos na fase corrente
+    combo:0,                // sequência atual de acertos
+    estrelasPorFase:[0,0,0],// estrelas conquistadas em cada fase
+    faseDesbloqueada:0,     // até qual fase está liberada
+    respondida:false,       // a pergunta atual já foi respondida?
+    ordemAlternativas:[]    // ordem embaralhada das alternativas da pergunta atual
+  };
+}
+
+let somLigado = true;
+let audioCtx = null; // criado no primeiro uso (regras de autoplay dos navegadores)
+
+/* ===================================================================
+   UTILIDADES
+   =================================================================== */
+
+// Embaralha um array (Fisher-Yates) e devolve uma cópia embaralhada
+function embaralhar(arr){
+  const a = arr.slice();
+  for(let i=a.length-1;i>0;i--){
+    const j = Math.floor(Math.random()*(i+1));
+    [a[i],a[j]] = [a[j],a[i]];
+  }
+  return a;
+}
+
+// Troca a tela visível
+function mostrarTela(id){
+  document.querySelectorAll('.tela').forEach(t=>t.classList.remove('ativa'));
+  document.getElementById(id).classList.add('ativa');
+}
+
+/* ===================================================================
+   ÁUDIO (Web Audio API) — sons simples gerados na hora
+   =================================================================== */
+function garantirAudio(){
+  if(!audioCtx){
+    try{ audioCtx = new (window.AudioContext||window.webkitAudioContext)(); }catch(e){ audioCtx=null; }
+  }
+  if(audioCtx && audioCtx.state==='suspended'){ audioCtx.resume(); }
+}
+
+// Toca uma sequência de notas (frequências) — usado para acerto/erro
+function tocarNotas(frequencias, tipo='sine', duracao=0.15){
+  if(!somLigado) return;
+  garantirAudio();
+  if(!audioCtx) return;
+  let t = audioCtx.currentTime;
+  frequencias.forEach(f=>{
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+    osc.type = tipo;
+    osc.frequency.value = f;
+    gain.gain.setValueAtTime(0.0001, t);
+    gain.gain.exponentialRampToValueAtTime(0.25, t+0.02);
+    gain.gain.exponentialRampToValueAtTime(0.0001, t+duracao);
+    osc.connect(gain); gain.connect(audioCtx.destination);
+    osc.start(t); osc.stop(t+duracao);
+    t += duracao;
+  });
+}
+
+function tocarAcerto(){ tocarNotas([523.25,659.25,783.99],'sine',0.13); } // acorde alegre subindo
+function tocarErro(){ tocarNotas([196,164.81],'sawtooth',0.18); }          // duas notas graves
+function tocarEstrela(){ tocarNotas([659.25,880,1046.5],'triangle',0.12); }
+
+function alternarSom(){
+  somLigado = !somLigado;
+  document.getElementById('btnSom').textContent = somLigado ? '🔊' : '🔇';
+  if(somLigado) tocarNotas([440],'sine',0.1);
+}
+
+/* ===================================================================
+   MODAL COMO JOGAR
+   =================================================================== */
+function abrirComoJogar(){ document.getElementById('modalComoJogar').classList.add('ativo'); }
+function fecharComoJogar(){ document.getElementById('modalComoJogar').classList.remove('ativo'); }
+
+/* ===================================================================
+   CENA DO SOLO — desenhada em SVG, evolui conforme os acertos
+   nivel: nº de acertos já feitos (0 a TOTAL_PERGUNTAS)
+   =================================================================== */
+function corDaTerra(nivel){
+  // De terra seca/clara (poluída) para terra úmida e fértil (escura)
+  const t = Math.min(nivel/TOTAL_PERGUNTAS,1);
+  // interpola entre #b58b6e (seco) e #5d4037 (fértil)
+  const c1=[181,139,110], c2=[93,64,55];
+  const r=Math.round(c1[0]+(c2[0]-c1[0])*t);
+  const g=Math.round(c1[1]+(c2[1]-c1[1])*t);
+  const b=Math.round(c1[2]+(c2[2]-c1[2])*t);
+  return `rgb(${r},${g},${b})`;
+}
+
+// Gera o HTML/SVG da cena para um dado nível de "limpeza" do solo
+function montarCenaSolo(nivel){
+  const totalPlantas = 7;                 // plantinhas distribuídas no solo
+  const plantasVisiveis = Math.round((nivel/TOTAL_PERGUNTAS)*totalPlantas);
+  const t = nivel/TOTAL_PERGUNTAS;
+
+  // Sol que fica mais brilhante conforme melhora
+  const solOpac = 0.4 + 0.6*t;
+
+  // Posições fixas das plantas (x em %, base do gramado)
+  const posicoes = [8,22,36,50,64,78,92];
+  const emojisPlanta = ['🌱','🌿','🍀','🌾','🌻','🌷','🌳'];
+
+  let plantasSVG = '';
+  posicoes.forEach((x,i)=>{
+    const visivel = i < plantasVisiveis ? 'visivel balanca' : '';
+    const emoji = emojisPlanta[i % emojisPlanta.length];
+    const tam = 22 + (i%3)*4;
+    plantasSVG += `<text x="${x}%" y="118" class="planta ${visivel}"
+        style="transition-delay:${i*0.08}s" font-size="${tam}"
+        text-anchor="middle" dominant-baseline="auto">${emoji}</text>`;
+  });
+
+  // Lixo que vai sumindo (quanto maior o nível, mais transparente / menos lixo)
+  const lixoOpac = Math.max(0, 1 - t*1.3);
+  const lixos = ['🗑️','🛢️','🦟','♨️'];
+  let lixoSVG = '';
+  [12,40,66,86].forEach((x,i)=>{
+    // some um lixo a cada acerto, da esquerda pra direita
+    const some = i < Math.floor(t*4) ? 0 : lixoOpac;
+    lixoSVG += `<text x="${x}%" y="112" class="lixo" style="opacity:${some.toFixed(2)}"
+        font-size="20" text-anchor="middle">${lixos[i]}</text>`;
+  });
+
+  return `
+    <svg viewBox="0 0 300 130" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">
+      <!-- Sol -->
+      <circle cx="262" cy="30" r="18" fill="#ffd54f" opacity="${solOpac.toFixed(2)}"/>
+      <!-- Faixa de terra -->
+      <rect id="faixaTerra" x="0" y="95" width="300" height="35" fill="${corDaTerra(nivel)}"/>
+      <!-- Gramado por cima da terra, cresce com o nível -->
+      <rect x="0" y="95" width="300" height="${(3+12*t).toFixed(1)}" fill="#6abf4b" opacity="${t.toFixed(2)}"/>
+      ${lixoSVG}
+      ${plantasSVG}
+    </svg>`;
+}
+
+// Atualiza a cena de solo principal (tela de pergunta)
+function atualizarCenaSolo(){
+  document.getElementById('cenaSolo').innerHTML = montarCenaSolo(estado.acertos);
+}
+
+/* ===================================================================
+   MAPA DE FASES
+   =================================================================== */
+function renderMapa(){
+  const trilha = document.getElementById('trilhaFases');
+  trilha.innerHTML = '';
+  FASES.forEach((fase,i)=>{
+    const bloqueada = i > estado.faseDesbloqueada;
+    const concluida = estado.estrelasPorFase[i] > 0;
+    const card = document.createElement('div');
+    card.className = 'fase-card'
+      + (bloqueada?' bloqueada':'')
+      + (concluida?' concluida':'');
+    const estrelasMini = concluida
+      ? '★'.repeat(estado.estrelasPorFase[i]) + '☆'.repeat(3-estado.estrelasPorFase[i])
+      : (bloqueada ? '🔒 Bloqueada' : 'Disponível');
+    card.innerHTML = `
+      <div class="icone">${bloqueada?'🔒':fase.icone}</div>
+      <div class="info">
+        <b>Fase ${i+1} — ${fase.nome}</b>
+        <small>${fase.descricao}</small>
+        <div class="estrelas-mini">${estrelasMini}</div>
+      </div>`;
+    if(!bloqueada){
+      card.onclick = ()=>{ garantirAudio(); abrirTransicao(i); };
+    }
+    trilha.appendChild(card);
+  });
+}
+
+function irParaMapa(){
+  garantirAudio();
+  renderMapa();
+  mostrarTela('tela-mapa');
+}
+
+/* ===================================================================
+   TRANSIÇÃO DE FASE
+   =================================================================== */
+function abrirTransicao(indiceFase){
+  estado.faseAtual = indiceFase;
+  estado.perguntaAtual = 0;
+  estado.acertosNaFase = 0;
+  const fase = FASES[indiceFase];
+  document.getElementById('transicaoIcone').textContent = fase.icone;
+  document.getElementById('transicaoTitulo').textContent = `Fase ${indiceFase+1}: ${fase.nome}`;
+  document.getElementById('transicaoTexto').textContent = fase.descricao;
+  mostrarTela('tela-transicao');
+}
+
+function iniciarPerguntasDaFase(){
+  mostrarTela('tela-pergunta');
+  carregarPergunta();
+}
+
+/* ===================================================================
+   PERGUNTAS
+   =================================================================== */
+function carregarPergunta(){
+  const fase = FASES[estado.faseAtual];
+  const perg = fase.perguntas[estado.perguntaAtual];
+  estado.respondida = false;
+
+  // Atualiza topo
+  document.getElementById('placarPontos').textContent = estado.pontos;
+  document.getElementById('rotuloFase').textContent = `Fase ${estado.faseAtual+1}`;
+
+  // Barra e contador (Pergunta X de 4)
+  const num = estado.perguntaAtual + 1;
+  document.getElementById('contadorPergunta').textContent = `Pergunta ${num} de 4`;
+  document.getElementById('barraProgresso').style.width = (num/4*100) + '%';
+
+  // Cena do solo
+  atualizarCenaSolo();
+
+  // Combo
+  atualizarIndicadorCombo();
+
+  // Enunciado
+  document.getElementById('enunciado').textContent = perg.enunciado;
+
+  // Alternativas embaralhadas (mantendo o índice original p/ saber a correta)
+  estado.ordemAlternativas = embaralhar(perg.alternativas.map((txt,idx)=>({txt,idx})));
+  const cont = document.getElementById('alternativas');
+  cont.innerHTML = '';
+  const letras = ['A','B','C','D'];
+  estado.ordemAlternativas.forEach((alt,pos)=>{
+    const btn = document.createElement('button');
+    btn.className = 'alt';
+    btn.innerHTML = `<span class="letra">${letras[pos]}</span><span>${alt.txt}</span>`;
+    btn.onclick = ()=> responder(btn, alt.idx, perg);
+    cont.appendChild(btn);
+  });
+
+  // Esconde feedback e botão continuar
+  const fb = document.getElementById('feedback');
+  fb.className = 'feedback'; fb.innerHTML = '';
+  document.getElementById('btnProxima').style.display = 'none';
+}
+
+function atualizarIndicadorCombo(){
+  const ind = document.getElementById('indicadorCombo');
+  if(estado.combo >= 2){
+    ind.textContent = `🔥 sequência x${estado.combo}`;
+    ind.classList.add('ativo');
+  }else{
+    ind.classList.remove('ativo');
+  }
+}
+
+function responder(botao, idxEscolhido, perg){
+  if(estado.respondida) return;       // evita responder duas vezes
+  estado.respondida = true;
+  garantirAudio();
+
+  const cont = document.getElementById('alternativas');
+  // bloqueia todas as alternativas
+  cont.querySelectorAll('.alt').forEach(b=>b.classList.add('bloqueada'));
+
+  const acertou = idxEscolhido === perg.correta;
+  const fb = document.getElementById('feedback');
+
+  if(acertou){
+    botao.classList.add('correta');
+    estado.acertos++;
+    estado.acertosNaFase++;
+    estado.combo++;
+    // pontuação: base + bônus por combo (a partir da 2ª seguida)
+    let ganho = PONTOS_BASE + (estado.combo>=2 ? (estado.combo-1)*BONUS_COMBO : 0);
+    estado.pontos += ganho;
+    animarPontos(ganho);
+    tocarAcerto();
+    atualizarCenaSolo();      // o solo melhora!
+    lancarConfete(botao);
+    fb.className = 'feedback ok';
+    fb.innerHTML = `<b>✅ Correto!</b>${perg.feedback}`;
+  }else{
+    botao.classList.add('errada');
+    estado.combo = 0;          // perde a sequência
+    tocarErro();
+    // mostra a alternativa correta em verde
+    cont.querySelectorAll('.alt').forEach(b=>{
+      const span = b.querySelector('span:last-child');
+      if(span && span.textContent === perg.alternativas[perg.correta]){
+        b.classList.add('correta');
+      }
+    });
+    // tremida na tela
+    const jogo = document.getElementById('jogo');
+    jogo.classList.add('shake');
+    setTimeout(()=>jogo.classList.remove('shake'),400);
+    fb.className = 'feedback no';
+    fb.innerHTML = `<b>❌ Resposta correta: ${perg.alternativas[perg.correta]}</b>${perg.feedback}`;
+  }
+
+  // atualiza placar e combo
+  document.getElementById('placarPontos').textContent = estado.pontos;
+  atualizarIndicadorCombo();
+
+  // botão para avançar
+  const btn = document.getElementById('btnProxima');
+  const ultimaDaFase = estado.perguntaAtual === 3;
+  btn.textContent = ultimaDaFase ? 'VER RESULTADO DA FASE ▶' : 'PRÓXIMA ▶';
+  btn.style.display = 'block';
+}
+
+// Mostra "+pontos" subindo perto do placar
+function animarPontos(qtd){
+  const jogo = document.getElementById('jogo');
+  const el = document.createElement('div');
+  el.className = 'ponto-flutua';
+  el.textContent = '+' + qtd;
+  el.style.left = '24px';
+  el.style.top = '60px';
+  jogo.appendChild(el);
+  setTimeout(()=>el.remove(),1000);
+}
+
+// Confete suave saindo da alternativa correta
+function lancarConfete(origem){
+  const jogo = document.getElementById('jogo');
+  const cores = ['#4caf50','#ffd54f','#7cc36a','#ff9800','#2e7d32'];
+  for(let i=0;i<14;i++){
+    const c = document.createElement('div');
+    c.className = 'confete';
+    c.style.background = cores[i%cores.length];
+    c.style.left = (10 + Math.random()*80) + '%';
+    c.style.animationDuration = (1 + Math.random()*0.8) + 's';
+    c.style.top = '40%';
+    jogo.appendChild(c);
+    setTimeout(()=>c.remove(),1800);
+  }
+}
+
+function proximaPergunta(){
+  if(estado.perguntaAtual < 3){
+    estado.perguntaAtual++;
+    // transição suave de saída/entrada
+    const tela = document.getElementById('tela-pergunta');
+    tela.classList.remove('ativa');
+    void tela.offsetWidth; // força reflow para reiniciar a animação
+    tela.classList.add('ativa');
+    carregarPergunta();
+  }else{
+    finalizarFase();
+  }
+}
+
+/* ===================================================================
+   FIM DE FASE
+   =================================================================== */
+function calcularEstrelas(acertosNaFase){
+  if(acertosNaFase >= 4) return 3;
+  if(acertosNaFase === 3) return 2;
+  if(acertosNaFase >= 1) return 1;
+  return 0; // nenhum acerto
+}
+
+function finalizarFase(){
+  const estrelas = calcularEstrelas(estado.acertosNaFase);
+  // guarda a melhor pontuação de estrelas da fase
+  estado.estrelasPorFase[estado.faseAtual] = Math.max(estado.estrelasPorFase[estado.faseAtual], estrelas);
+  // desbloqueia a próxima fase
+  if(estado.faseAtual + 1 > estado.faseDesbloqueada && estado.faseAtual < FASES.length-1){
+    estado.faseDesbloqueada = estado.faseAtual + 1;
+  }
+
+  document.getElementById('tituloFimFase').textContent =
+    `Fase ${estado.faseAtual+1} concluída! 🎉`;
+  document.getElementById('textoFimFase').textContent =
+    `Você acertou ${estado.acertosNaFase} de 4 nesta fase.`;
+
+  // anima as estrelas aparecendo
+  const elEstrelas = document.getElementById('estrelasFase');
+  elEstrelas.innerHTML = '';
+  for(let i=0;i<3;i++){
+    const s = document.createElement('span');
+    s.className = 'estrela';
+    s.style.animationDelay = (i*0.25)+'s';
+    s.textContent = i < estrelas ? '⭐' : '☆';
+    elEstrelas.appendChild(s);
+    if(i < estrelas) setTimeout(()=>tocarEstrela(), i*250);
+  }
+
+  // botão final muda de texto na última fase
+  document.getElementById('btnFimFase').textContent =
+    (estado.faseAtual === FASES.length-1) ? 'VER RESULTADO FINAL ▶' : 'PRÓXIMA FASE ▶';
+
+  mostrarTela('tela-fim-fase');
+}
+
+function aposFimDeFase(){
+  if(estado.faseAtual < FASES.length-1){
+    // vai para o mapa, mostrando a nova fase desbloqueada
+    irParaMapa();
+  }else{
+    finalizarJogo();
+  }
+}
+
+/* ===================================================================
+   TELA FINAL
+   =================================================================== */
+function finalizarJogo(){
+  const totalEstrelas = estado.estrelasPorFase.reduce((a,b)=>a+b,0);
+  document.getElementById('finalAcertos').textContent = estado.acertos;
+  document.getElementById('finalPontos').textContent = estado.pontos;
+  document.getElementById('finalEstrelas').textContent = totalEstrelas;
+
+  // cena de solo final reflete o desempenho total
+  document.getElementById('cenaSoloFinal').innerHTML = montarCenaSolo(estado.acertos);
+
+  // estrelas grandes
+  const elEstrelas = document.getElementById('estrelasFinal');
+  elEstrelas.innerHTML = '';
+  for(let i=0;i<9;i++){ /* até 9 estrelas possíveis (3 por fase) */ }
+  // mostra total como X/9
+  elEstrelas.textContent = '⭐'.repeat(totalEstrelas) + '☆'.repeat(9-totalEstrelas);
+
+  // mensagem e ícone conforme desempenho
+  let msg, icone;
+  if(estado.acertos >= 11){
+    msg = "🌳 Incrível! Você é um(a) Guardião(ã) do Solo! A terra está cheia de vida graças a você!";
+    icone = "🏆";
+  }else if(estado.acertos >= 8){
+    msg = "🌿 Muito bem! Você entende bastante sobre cuidar do solo. Continue assim!";
+    icone = "🌳";
+  }else if(estado.acertos >= 5){
+    msg = "🌱 Bom começo! Você já plantou boas ideias. Que tal jogar de novo para aprender mais?";
+    icone = "🌱";
+  }else{
+    msg = "🌾 O solo precisa de você! Reveja o conteúdo e tente novamente para deixá-lo bem verdinho.";
+    icone = "🚜";
+  }
+  document.getElementById('mensagemFinal').textContent = msg;
+  document.getElementById('iconeFinal').textContent = icone;
+
+  if(estado.acertos >= 8){
+    // pequena chuva de confete na vitória
+    setTimeout(()=>lancarConfete(),200);
+    setTimeout(()=>lancarConfete(),600);
+    tocarEstrela();
+  }
+
+  mostrarTela('tela-final');
+}
+
+/* ===================================================================
+   REINÍCIO
+   =================================================================== */
+function reiniciarJogo(){
+  estado = estadoInicial();
+  garantirAudio();
+  irParaMapa();
+}
+
+/* ===================================================================
+   INÍCIO
+   =================================================================== */
+estado = estadoInicial();
+// fecha o modal ao clicar fora dele
+document.getElementById('modalComoJogar').addEventListener('click', e=>{
+  if(e.target.id === 'modalComoJogar') fecharComoJogar();
+});
+</script>
+</body>
+</html>
