@@ -23,8 +23,10 @@
   --vermelho:#e53935;
   --texto:#2b3a2b;
   --branco:#ffffff;
-  --sombra:0 8px 24px rgba(0,0,0,.15);
-  --raio:18px;
+  --sombra:0 18px 50px rgba(20,60,30,.28);
+  --raio:24px;
+  --grad-verde:linear-gradient(135deg,#66bb6a 0%,#43a047 55%,#2e7d32 100%);
+  --grad-amarelo:linear-gradient(135deg,#ffe082,#ffb300);
 }
 
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
@@ -34,25 +36,53 @@ html,body{height:100%;}
 body{
   font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
   color:var(--texto);
-  /* Fundo em degradê céu -> campo */
-  background:linear-gradient(180deg,#aee7ff 0%,#dff5d8 55%,#cdeac0 100%);
+  /* Fundo em degradê céu -> campo, animado suavemente */
+  background:linear-gradient(180deg,#9bdcff 0%,#bfeaff 25%,#dff5d8 60%,#bfe6a8 100%);
+  background-size:100% 200%;
+  animation:fundoMove 18s ease-in-out infinite alternate;
   min-height:100dvh;
   display:flex;
   align-items:center;
   justify-content:center;
   padding:14px;
   overflow-x:hidden;
+  position:relative;
+}
+@keyframes fundoMove{from{background-position:0 0;}to{background-position:0 100%;}}
+
+/* Sol decorativo fixo no fundo da página */
+body::before{
+  content:"";
+  position:fixed;top:-80px;right:-80px;width:240px;height:240px;border-radius:50%;
+  background:radial-gradient(circle,#fff3b0 0%,#ffe27a 45%,rgba(255,210,90,0) 72%);
+  pointer-events:none;z-index:0;animation:brilhaSol 6s ease-in-out infinite;
+}
+@keyframes brilhaSol{0%,100%{opacity:.75;transform:scale(1);}50%{opacity:1;transform:scale(1.08);}}
+
+/* Camada de "folhinhas" que flutuam no fundo */
+#folhas{position:fixed;inset:0;pointer-events:none;z-index:0;overflow:hidden;}
+#folhas span{
+  position:absolute;top:-40px;font-size:22px;opacity:.55;
+  animation:cair-folha linear infinite;
+}
+@keyframes cair-folha{
+  0%{transform:translateY(-40px) rotate(0deg);}
+  100%{transform:translateY(105vh) rotate(360deg);}
 }
 
 /* ---------- Cartão principal do jogo ---------- */
 #jogo{
   width:100%;
   max-width:520px;
-  background:var(--branco);
+  background:rgba(255,255,255,.92);
+  backdrop-filter:blur(6px);
+  -webkit-backdrop-filter:blur(6px);
   border-radius:var(--raio);
-  box-shadow:var(--sombra);
+  box-shadow:var(--sombra), inset 0 0 0 1px rgba(255,255,255,.6);
   overflow:hidden;
   position:relative;
+  z-index:1;
+  border-top:5px solid var(--verde);
 }
 
 /* ---------- Telas (só a .ativa aparece) ---------- */
@@ -66,12 +96,16 @@ body{
 
 /* ---------- Tipografia ---------- */
 h1{
-  font-size:clamp(2.1rem,9vw,3rem);
+  font-size:clamp(2.3rem,10vw,3.4rem);
   text-align:center;
-  color:var(--verde-escuro);
-  letter-spacing:1px;
-  text-shadow:0 2px 0 rgba(0,0,0,.06);
+  letter-spacing:2px;
   line-height:1.05;
+  font-weight:900;
+  /* texto em degradê verde */
+  background:linear-gradient(135deg,#66bb6a,#2e7d32 60%,#1b5e20);
+  -webkit-background-clip:text;background-clip:text;
+  -webkit-text-fill-color:transparent;
+  filter:drop-shadow(0 3px 2px rgba(0,0,0,.12));
 }
 h2{font-size:clamp(1.3rem,5vw,1.7rem);color:var(--verde-escuro);text-align:center;}
 .subtitulo{text-align:center;color:var(--terra-escura);margin:10px 0 22px;font-size:1rem;line-height:1.45;}
@@ -82,39 +116,57 @@ h2{font-size:clamp(1.3rem,5vw,1.7rem);color:var(--verde-escuro);text-align:cente
   width:100%;
   min-height:54px;
   border:none;
-  border-radius:14px;
-  background:var(--verde);
+  border-radius:16px;
+  background:var(--grad-verde);
   color:#fff;
   font-size:1.15rem;
-  font-weight:700;
+  font-weight:800;
+  letter-spacing:.3px;
   cursor:pointer;
   padding:12px 18px;
-  box-shadow:0 5px 0 var(--verde-escuro);
+  box-shadow:0 6px 0 #1b5e20, 0 10px 18px rgba(46,125,50,.35);
   transition:transform .08s, box-shadow .08s, filter .15s;
   margin-top:12px;
+  position:relative;
+  overflow:hidden;
 }
-.btn:hover{filter:brightness(1.05);}
-.btn:active{transform:translateY(4px);box-shadow:0 1px 0 var(--verde-escuro);}
+/* brilho que cruza o botão */
+.btn::after{
+  content:"";position:absolute;top:0;left:-120%;width:60%;height:100%;
+  background:linear-gradient(100deg,transparent,rgba(255,255,255,.45),transparent);
+  transform:skewX(-20deg);animation:brilho 4.5s ease-in-out infinite;
+}
+@keyframes brilho{0%,72%{left:-120%;}85%{left:130%;}100%{left:130%;}}
+.btn:hover{filter:brightness(1.06);}
+.btn:active{transform:translateY(5px);box-shadow:0 1px 0 #1b5e20, 0 3px 8px rgba(46,125,50,.3);}
 .btn.secundario{
   background:#fff;color:var(--verde-escuro);
-  box-shadow:0 4px 0 #bdbdbd;border:2px solid var(--verde-fundo);
+  box-shadow:0 5px 0 #cfd8cf, 0 8px 14px rgba(0,0,0,.08);border:2px solid var(--verde-fundo);
 }
-.btn.secundario:active{box-shadow:0 1px 0 #bdbdbd;}
-.btn.grande{font-size:1.35rem;min-height:62px;animation:pulsa 2s infinite;}
+.btn.secundario::after{display:none;}
+.btn.secundario:active{box-shadow:0 1px 0 #cfd8cf;}
+.btn.grande{font-size:1.4rem;min-height:64px;animation:pulsa 2s infinite;}
 
 @keyframes pulsa{
   0%,100%{transform:scale(1);}
   50%{transform:scale(1.035);}
 }
 
-/* ---------- Botão de som (canto) ---------- */
-#btnSom{
-  position:absolute;top:12px;right:12px;z-index:5;
+/* ---------- Botões de controle (som + música) no canto ---------- */
+.controles{position:absolute;top:12px;right:12px;z-index:5;display:flex;gap:8px;}
+.ctrl-btn{
   width:44px;height:44px;border-radius:50%;
   border:none;background:var(--verde-fundo);
-  font-size:1.3rem;cursor:pointer;line-height:1;
+  font-size:1.25rem;cursor:pointer;line-height:1;
   box-shadow:0 2px 6px rgba(0,0,0,.12);
+  transition:transform .1s, background .2s;
+  display:flex;align-items:center;justify-content:center;
 }
+.ctrl-btn:active{transform:scale(.9);}
+.ctrl-btn.off{background:#eceff1;filter:grayscale(.6);opacity:.7;}
+/* anel girando quando a música está tocando */
+.ctrl-btn.tocando{animation:gira 4s linear infinite;}
+@keyframes gira{to{transform:rotate(360deg);}}
 
 /* ===================================================================
    O SOLO ANIMADO (coração da imersão)
@@ -287,9 +339,15 @@ h2{font-size:clamp(1.3rem,5vw,1.7rem);color:var(--verde-escuro);text-align:cente
 </head>
 <body>
 
+<!-- Folhinhas decorativas que flutuam no fundo (preenchidas via JS) -->
+<div id="folhas"></div>
+
 <div id="jogo">
-  <!-- Botão liga/desliga som (sempre visível) -->
-  <button id="btnSom" title="Ligar/desligar som" onclick="alternarSom()">🔊</button>
+  <!-- Botões de controle: música e efeitos sonoros (sempre visíveis) -->
+  <div class="controles">
+    <button id="btnMusica" class="ctrl-btn" title="Ligar/desligar música" onclick="alternarMusica()">🎵</button>
+    <button id="btnSom" class="ctrl-btn" title="Ligar/desligar efeitos sonoros" onclick="alternarSom()">🔊</button>
+  </div>
 
   <!-- ========================= TELA INICIAL ========================= -->
   <section id="tela-inicial" class="tela ativa centralizado">
@@ -568,6 +626,11 @@ function estadoInicial(){
 let somLigado = true;
 let audioCtx = null; // criado no primeiro uso (regras de autoplay dos navegadores)
 
+let musicaLigada = true;   // música de fundo ligada por padrão
+let musicaTimer = null;    // agendador da melodia
+let passoMelodia = 0;      // posição atual na melodia
+let musicaGain = null;     // controle de volume só da música
+
 /* ===================================================================
    UTILIDADES
    =================================================================== */
@@ -624,8 +687,80 @@ function tocarEstrela(){ tocarNotas([659.25,880,1046.5],'triangle',0.12); }
 
 function alternarSom(){
   somLigado = !somLigado;
-  document.getElementById('btnSom').textContent = somLigado ? '🔊' : '🔇';
+  const b = document.getElementById('btnSom');
+  b.textContent = somLigado ? '🔊' : '🔇';
+  b.classList.toggle('off', !somLigado);
   if(somLigado) tocarNotas([440],'sine',0.1);
+}
+
+/* ===================================================================
+   MÚSICA DE FUNDO — melodia suave e relaxante gerada na hora.
+   Usa uma escala pentatônica (sempre soa harmoniosa) em loop, com
+   uma nota grave de "pad" acompanhando. Tudo via Web Audio API.
+   =================================================================== */
+
+// Melodia principal (frequências em Hz) — pentatônica de Dó maior, alegre e calma
+const MELODIA = [
+  523.25, 587.33, 659.25, 783.99, 659.25, 587.33,
+  523.25, 659.25, 587.33, 783.99, 880.00, 783.99,
+  659.25, 587.33, 523.25, 587.33
+];
+// Notas graves de acompanhamento (pad), uma a cada 4 passos da melodia
+const PAD = [130.81, 174.61, 196.00, 146.83];
+
+// Toca uma nota da música com envelope bem suave (volume controlado por musicaGain)
+function tocarNotaMusica(freq, dur, tipo='triangle', vol=0.18){
+  if(!audioCtx || !musicaGain) return;
+  const t = audioCtx.currentTime;
+  const osc = audioCtx.createOscillator();
+  const g = audioCtx.createGain();
+  osc.type = tipo;
+  osc.frequency.value = freq;
+  g.gain.setValueAtTime(0.0001, t);
+  g.gain.exponentialRampToValueAtTime(vol, t+0.08);     // ataque suave
+  g.gain.exponentialRampToValueAtTime(0.0001, t+dur);   // decaimento longo
+  osc.connect(g); g.connect(musicaGain);
+  osc.start(t); osc.stop(t+dur+0.05);
+}
+
+// Toca um passo da melodia e agenda o próximo (loop infinito)
+function passoDaMusica(){
+  if(!musicaLigada) return;
+  const nota = MELODIA[passoMelodia % MELODIA.length];
+  tocarNotaMusica(nota, 0.45, 'triangle', 0.16);
+  // pad grave a cada 4 notas, dando uma base harmônica
+  if(passoMelodia % 4 === 0){
+    tocarNotaMusica(PAD[(passoMelodia/4) % PAD.length], 1.6, 'sine', 0.10);
+  }
+  passoMelodia++;
+}
+
+function iniciarMusica(){
+  garantirAudio();
+  if(!audioCtx) return;
+  // cria o canal de volume da música uma única vez
+  if(!musicaGain){
+    musicaGain = audioCtx.createGain();
+    musicaGain.gain.value = 0.6; // música fica em segundo plano, baixinha
+    musicaGain.connect(audioCtx.destination);
+  }
+  if(musicaTimer) return;          // já está tocando
+  passoDaMusica();                 // toca a primeira nota imediatamente
+  musicaTimer = setInterval(passoDaMusica, 430); // ~140 bpm, ritmo calmo
+  document.getElementById('btnMusica').classList.add('tocando');
+}
+
+function pararMusica(){
+  if(musicaTimer){ clearInterval(musicaTimer); musicaTimer = null; }
+  document.getElementById('btnMusica').classList.remove('tocando');
+}
+
+function alternarMusica(){
+  musicaLigada = !musicaLigada;
+  const b = document.getElementById('btnMusica');
+  b.classList.toggle('off', !musicaLigada);
+  if(musicaLigada){ iniciarMusica(); }
+  else{ pararMusica(); }
 }
 
 /* ===================================================================
@@ -733,6 +868,7 @@ function renderMapa(){
 
 function irParaMapa(){
   garantirAudio();
+  if(musicaLigada) iniciarMusica(); // começa a música no primeiro toque em JOGAR
   renderMapa();
   mostrarTela('tela-mapa');
 }
@@ -1025,6 +1161,22 @@ estado = estadoInicial();
 document.getElementById('modalComoJogar').addEventListener('click', e=>{
   if(e.target.id === 'modalComoJogar') fecharComoJogar();
 });
+
+// Cria as folhinhas que flutuam no fundo da tela (decoração)
+function criarFolhas(){
+  const cont = document.getElementById('folhas');
+  const emojis = ['🍃','🌿','🍂','🌱'];
+  for(let i=0;i<12;i++){
+    const s = document.createElement('span');
+    s.textContent = emojis[i % emojis.length];
+    s.style.left = Math.random()*100 + 'vw';
+    s.style.fontSize = (16 + Math.random()*16) + 'px';
+    s.style.animationDuration = (9 + Math.random()*9) + 's';
+    s.style.animationDelay = (-Math.random()*12) + 's';
+    cont.appendChild(s);
+  }
+}
+criarFolhas();
 </script>
 </body>
 </html>
