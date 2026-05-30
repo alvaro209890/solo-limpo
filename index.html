@@ -339,6 +339,9 @@ h2{font-size:clamp(1.3rem,5vw,1.7rem);color:var(--verde-escuro);text-align:cente
 </head>
 <body>
 
+<!-- Música de fundo (arquivo escolhido pelo usuário), em loop -->
+<audio id="musicaFundo" src="musica.mp3" loop preload="auto"></audio>
+
 <!-- Folhinhas decorativas que flutuam no fundo (preenchidas via JS) -->
 <div id="folhas"></div>
 
@@ -627,9 +630,8 @@ let somLigado = true;
 let audioCtx = null; // criado no primeiro uso (regras de autoplay dos navegadores)
 
 let musicaLigada = true;   // música de fundo ligada por padrão
-let musicaTimer = null;    // agendador da melodia
-let passoMelodia = 0;      // posição atual na melodia
-let musicaGain = null;     // controle de volume só da música
+const musicaFundo = document.getElementById('musicaFundo'); // elemento <audio>
+musicaFundo.volume = 0.45; // volume da música de fundo (0 a 1)
 
 /* ===================================================================
    UTILIDADES
@@ -694,64 +696,20 @@ function alternarSom(){
 }
 
 /* ===================================================================
-   MÚSICA DE FUNDO — melodia suave e relaxante gerada na hora.
-   Usa uma escala pentatônica (sempre soa harmoniosa) em loop, com
-   uma nota grave de "pad" acompanhando. Tudo via Web Audio API.
+   MÚSICA DE FUNDO — toca o arquivo de áudio (musica.mp3) em loop.
+   Os navegadores só liberam o áudio após um gesto do usuário, por
+   isso a música começa no primeiro clique em "JOGAR".
    =================================================================== */
 
-// Melodia principal (frequências em Hz) — pentatônica de Dó maior, alegre e calma
-const MELODIA = [
-  523.25, 587.33, 659.25, 783.99, 659.25, 587.33,
-  523.25, 659.25, 587.33, 783.99, 880.00, 783.99,
-  659.25, 587.33, 523.25, 587.33
-];
-// Notas graves de acompanhamento (pad), uma a cada 4 passos da melodia
-const PAD = [130.81, 174.61, 196.00, 146.83];
-
-// Toca uma nota da música com envelope bem suave (volume controlado por musicaGain)
-function tocarNotaMusica(freq, dur, tipo='triangle', vol=0.18){
-  if(!audioCtx || !musicaGain) return;
-  const t = audioCtx.currentTime;
-  const osc = audioCtx.createOscillator();
-  const g = audioCtx.createGain();
-  osc.type = tipo;
-  osc.frequency.value = freq;
-  g.gain.setValueAtTime(0.0001, t);
-  g.gain.exponentialRampToValueAtTime(vol, t+0.08);     // ataque suave
-  g.gain.exponentialRampToValueAtTime(0.0001, t+dur);   // decaimento longo
-  osc.connect(g); g.connect(musicaGain);
-  osc.start(t); osc.stop(t+dur+0.05);
-}
-
-// Toca um passo da melodia e agenda o próximo (loop infinito)
-function passoDaMusica(){
-  if(!musicaLigada) return;
-  const nota = MELODIA[passoMelodia % MELODIA.length];
-  tocarNotaMusica(nota, 0.45, 'triangle', 0.16);
-  // pad grave a cada 4 notas, dando uma base harmônica
-  if(passoMelodia % 4 === 0){
-    tocarNotaMusica(PAD[(passoMelodia/4) % PAD.length], 1.6, 'sine', 0.10);
-  }
-  passoMelodia++;
-}
-
 function iniciarMusica(){
-  garantirAudio();
-  if(!audioCtx) return;
-  // cria o canal de volume da música uma única vez
-  if(!musicaGain){
-    musicaGain = audioCtx.createGain();
-    musicaGain.gain.value = 0.6; // música fica em segundo plano, baixinha
-    musicaGain.connect(audioCtx.destination);
-  }
-  if(musicaTimer) return;          // já está tocando
-  passoDaMusica();                 // toca a primeira nota imediatamente
-  musicaTimer = setInterval(passoDaMusica, 430); // ~140 bpm, ritmo calmo
-  document.getElementById('btnMusica').classList.add('tocando');
+  // play() retorna uma Promise; ignoramos o erro caso o navegador bloqueie
+  musicaFundo.play().then(()=>{
+    document.getElementById('btnMusica').classList.add('tocando');
+  }).catch(()=>{ /* será iniciada no próximo gesto do usuário */ });
 }
 
 function pararMusica(){
-  if(musicaTimer){ clearInterval(musicaTimer); musicaTimer = null; }
+  musicaFundo.pause();
   document.getElementById('btnMusica').classList.remove('tocando');
 }
 
