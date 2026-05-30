@@ -4,153 +4,191 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <meta name="description" content="SOLO LIMPO - Jogo de quiz educativo sobre poluição do solo.">
-<title>SOLO LIMPO 🌱 — Quiz sobre Poluição do Solo</title>
+<title>SOLO LIMPO 🌱 — Quiz Interativo</title>
+
+<!-- Google Fonts -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@700;900&family=Poppins:wght@400;600&display=swap" rel="stylesheet">
+
+<!-- Bibliotecas Externas -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js"></script>
+
 <style>
 /* ===================================================================
-   SOLO LIMPO — Jogo de quiz educativo sobre poluição do solo
-   Tudo em um único arquivo: HTML + CSS + JS puro (sem dependências).
+   SOLO LIMPO — Versão Premium com GSAP
    =================================================================== */
 
-/* ---------- Variáveis de cor (paleta natureza) ---------- */
 :root{
-  --verde-claro:#7cc36a;
-  --verde:#4caf50;
-  --verde-escuro:#2e7d32;
-  --verde-fundo:#e8f5e9;
-  --terra:#8d6e63;
-  --terra-escura:#5d4037;
-  --amarelo:#ffd54f;
-  --vermelho:#e53935;
-  --texto:#2b3a2b;
+  --verde-neon:#70e000;
+  --verde-claro:#9ef01a;
+  --verde:#38b000;
+  --verde-deep:#004b23;
+  --verde-fundo:#f7fff7;
+  --terra:#7f5539;
+  --terra-escura:#4b3621;
+  --amarelo:#ffcc00;
+  --vermelho:#ff4d6d;
+  --texto:#1a2e1a;
   --branco:#ffffff;
-  --sombra:0 18px 50px rgba(20,60,30,.28);
-  --raio:24px;
-  --grad-verde:linear-gradient(135deg,#66bb6a 0%,#43a047 55%,#2e7d32 100%);
-  --grad-amarelo:linear-gradient(135deg,#ffe082,#ffb300);
+  --sombra:0 25px 80px rgba(0,0,0,0.12);
+  --raio:40px;
+  --font-title:'Montserrat', sans-serif;
+  --font-body:'Poppins', sans-serif;
+  --grad-verde:linear-gradient(135deg,#70e000 0%,#38b000 100%);
 }
 
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
 
-html,body{height:100%;}
-
 body{
-  font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  font-family:var(--font-body);
   color:var(--texto);
-  /* Fundo em degradê céu -> campo, animado suavemente */
-  background:linear-gradient(180deg,#9bdcff 0%,#bfeaff 25%,#dff5d8 60%,#bfe6a8 100%);
-  background-size:100% 200%;
-  animation:fundoMove 18s ease-in-out infinite alternate;
+  background:linear-gradient(135deg,#a2d2ff 0%,#ccffaf 100%);
+  background-attachment:fixed;
   min-height:100dvh;
   display:flex;
   align-items:center;
   justify-content:center;
-  padding:14px;
+  padding:24px;
   overflow-x:hidden;
-  position:relative;
-}
-@keyframes fundoMove{from{background-position:0 0;}to{background-position:0 100%;}}
-
-/* Sol decorativo fixo no fundo da página */
-body::before{
-  content:"";
-  position:fixed;top:-80px;right:-80px;width:240px;height:240px;border-radius:50%;
-  background:radial-gradient(circle,#fff3b0 0%,#ffe27a 45%,rgba(255,210,90,0) 72%);
-  pointer-events:none;z-index:0;animation:brilhaSol 6s ease-in-out infinite;
-}
-@keyframes brilhaSol{0%,100%{opacity:.75;transform:scale(1);}50%{opacity:1;transform:scale(1.08);}}
-
-/* Camada de "folhinhas" que flutuam no fundo */
-#folhas{position:fixed;inset:0;pointer-events:none;z-index:0;overflow:hidden;}
-#folhas span{
-  position:absolute;top:-40px;font-size:22px;opacity:.55;
-  animation:cair-folha linear infinite;
-}
-@keyframes cair-folha{
-  0%{transform:translateY(-40px) rotate(0deg);}
-  100%{transform:translateY(105vh) rotate(360deg);}
 }
 
-/* ---------- Cartão principal do jogo ---------- */
+/* Sol decorativo animado */
+.sol-container{
+  position:fixed;top:40px;right:40px;z-index:0;
+}
+.sol{
+  width:120px;height:120px;background:#ffd54f;border-radius:50%;
+  box-shadow:0 0 60px #ffea00;
+  animation:pulsaSol 4s ease-in-out infinite;
+}
+@keyframes pulsaSol{0%,100%{transform:scale(1);opacity:0.8;}50%{transform:scale(1.15);opacity:1;}}
+
+/* ---------- Personagem Minhoco ---------- */
+#personagem-wrap{
+  position:fixed;bottom:20px;left:40px;z-index:10;
+  display:flex;flex-direction:column;align-items:center;
+  pointer-events:none;transition:transform 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+.balao-fala{
+  background:white;padding:12px 18px;border-radius:20px;
+  box-shadow:0 10px 25px rgba(0,0,0,0.1);margin-bottom:15px;
+  position:relative;font-weight:600;font-size:0.9rem;
+  max-width:200px;text-align:center;opacity:0;transform:translateY(10px);
+  transition:all 0.3s ease;
+}
+.balao-fala.show{opacity:1;transform:translateY(0);}
+.balao-fala::after{
+  content:'';position:absolute;bottom:-10px;left:50%;transform:translateX(-50%);
+  border-left:10px solid transparent;border-right:10px solid transparent;
+  border-top:10px solid white;
+}
+
+.minhoco{width:100px;height:100px;filter:drop-shadow(0 10px 10px rgba(0,0,0,0.1));}
+.minhoco-corpo{fill:#ff8a80;animation:ondula 3s ease-in-out infinite;}
+/* ---------- Cena de Bar e Personagens Sertanejos ---------- */
+.cena-bar{
+  position:fixed;bottom:20px;right:20px;z-index:0;
+  display:flex;flex-direction:column;align-items:center;
+  pointer-events:none;opacity:0.9;
+}
+.mesa-bar{
+  filter:drop-shadow(0 5px 15px rgba(0,0,0,0.1));
+}
+.pensonagem-sertanejo{
+  animation:balancaSertanejo 3s ease-in-out infinite alternate;
+  transform-origin:bottom center;
+}
+@keyframes balancaSertanejo{
+  from{transform:rotate(-2deg);}
+  to{transform:rotate(2deg);}
+}
+.amigos-bebendo{
+  animation:brinde 4s ease-in-out infinite;
+}
+@keyframes brinde{
+  0%,100%{transform:translateY(0);}
+  50%{transform:translateY(-5px);}
+}
 #jogo{
   width:100%;
-  max-width:520px;
-  background:rgba(255,255,255,.92);
-  backdrop-filter:blur(6px);
-  -webkit-backdrop-filter:blur(6px);
+  max-width:560px;
+  background:rgba(255,255,255,0.85);
+  backdrop-filter:blur(15px);
+  -webkit-backdrop-filter:blur(15px);
   border-radius:var(--raio);
-  box-shadow:var(--sombra), inset 0 0 0 1px rgba(255,255,255,.6);
+  box-shadow:var(--sombra);
   overflow:hidden;
   position:relative;
   z-index:1;
-  border-top:5px solid var(--verde);
+  border:1px solid rgba(255,255,255,0.4);
 }
 
-/* ---------- Telas (só a .ativa aparece) ---------- */
-.tela{display:none;padding:22px 20px 26px;animation:entra .45s ease;}
+/* ---------- Telas ---------- */
+.tela{display:none;padding:30px;animation:fadeUp 0.6s cubic-bezier(0.23, 1, 0.32, 1) forwards;}
 .tela.ativa{display:block;}
 
-@keyframes entra{
-  from{opacity:0;transform:translateY(14px);}
-  to{opacity:1;transform:translateY(0);}
+@keyframes fadeUp{
+  from{opacity:0;transform:translateY(30px) scale(0.95);}
+  to{opacity:1;transform:translateY(0) scale(1);}
 }
 
 /* ---------- Tipografia ---------- */
 h1{
-  font-size:clamp(2.3rem,10vw,3.4rem);
+  font-size:clamp(2.5rem,12vw,4rem);
   text-align:center;
-  letter-spacing:2px;
-  line-height:1.05;
   font-weight:900;
-  /* texto em degradê verde */
-  background:linear-gradient(135deg,#66bb6a,#2e7d32 60%,#1b5e20);
+  background:linear-gradient(135deg,#388e3c,#1b5e20);
   -webkit-background-clip:text;background-clip:text;
   -webkit-text-fill-color:transparent;
-  filter:drop-shadow(0 3px 2px rgba(0,0,0,.12));
+  margin-bottom:10px;
 }
-h2{font-size:clamp(1.3rem,5vw,1.7rem);color:var(--verde-escuro);text-align:center;}
-.subtitulo{text-align:center;color:var(--terra-escura);margin:10px 0 22px;font-size:1rem;line-height:1.45;}
+h2{font-size:1.8rem;color:var(--verde-deep);text-align:center;margin-bottom:15px;}
+.subtitulo{text-align:center;color:var(--terra-escura);margin-bottom:30px;font-size:1.1rem;line-height:1.6;}
 
 /* ---------- Botões ---------- */
 .btn{
-  display:inline-flex;align-items:center;justify-content:center;gap:8px;
-  width:100%;
-  min-height:54px;
-  border:none;
-  border-radius:16px;
-  background:var(--grad-verde);
-  color:#fff;
-  font-size:1.15rem;
-  font-weight:800;
-  letter-spacing:.3px;
-  cursor:pointer;
-  padding:12px 18px;
-  box-shadow:0 6px 0 #1b5e20, 0 10px 18px rgba(46,125,50,.35);
-  transition:transform .08s, box-shadow .08s, filter .15s;
-  margin-top:12px;
-  position:relative;
-  overflow:hidden;
+  display:inline-flex;align-items:center;justify-content:center;gap:10px;
+  width:100%;min-height:60px;border:none;border-radius:20px;
+  background:var(--grad-verde);color:#fff;
+  font-size:1.2rem;font-weight:800;cursor:pointer;
+  transition:all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  margin-top:15px;box-shadow:0 10px 20px rgba(46,125,50,0.2);
 }
-/* brilho que cruza o botão */
-.btn::after{
-  content:"";position:absolute;top:0;left:-120%;width:60%;height:100%;
-  background:linear-gradient(100deg,transparent,rgba(255,255,255,.45),transparent);
-  transform:skewX(-20deg);animation:brilho 4.5s ease-in-out infinite;
-}
-@keyframes brilho{0%,72%{left:-120%;}85%{left:130%;}100%{left:130%;}}
-.btn:hover{filter:brightness(1.06);}
-.btn:active{transform:translateY(5px);box-shadow:0 1px 0 #1b5e20, 0 3px 8px rgba(46,125,50,.3);}
+.btn:hover{transform:translateY(-5px);box-shadow:0 15px 30px rgba(46,125,50,0.3);filter:brightness(1.1);}
+.btn:active{transform:translateY(0);}
 .btn.secundario{
-  background:#fff;color:var(--verde-escuro);
-  box-shadow:0 5px 0 #cfd8cf, 0 8px 14px rgba(0,0,0,.08);border:2px solid var(--verde-fundo);
+  background:white;color:var(--verde-escuro);border:2px solid var(--verde-claro);
+  box-shadow:none;
 }
-.btn.secundario::after{display:none;}
-.btn.secundario:active{box-shadow:0 1px 0 #cfd8cf;}
-.btn.grande{font-size:1.4rem;min-height:64px;animation:pulsa 2s infinite;}
+.btn.secundario:hover{background:var(--verde-fundo);}
+.btn.grande{font-size:1.4rem;min-height:70px;animation:pulsa 2s infinite;}
 
 @keyframes pulsa{
   0%,100%{transform:scale(1);}
-  50%{transform:scale(1.035);}
+  50%{transform:scale(1.04);}
 }
+
+/* ---------- Progress Bar ---------- */
+.progresso-wrap{background:rgba(0,0,0,0.05);border-radius:30px;height:12px;margin:20px 0;}
+.progresso-barra{
+  height:100%;background:linear-gradient(90deg,#a0f080,#4caf50);
+  border-radius:30px;width:0%;transition:width 0.8s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+/* ---------- Alternativas ---------- */
+.alt{
+  background:rgba(255,255,255,0.6);border:2px solid transparent;
+  padding:18px;border-radius:22px;margin-bottom:12px;
+  cursor:pointer;transition:all 0.2s ease;
+  display:flex;align-items:center;gap:15px;font-weight:600;
+}
+.alt:hover{background:white;transform:translateX(5px);border-color:var(--verde-claro);}
+.alt.correta{background:#e8f5e9;border-color:var(--verde);animation:jinga 0.5s;}
+.alt.errada{background:#ffebee;border-color:var(--vermelho);animation:treme 0.4s;}
+@keyframes jinga{0%,100%{transform:scale(1);}50%{transform:scale(1.05);}}
+@keyframes treme{0%,100%{transform:translateX(0);}25%{transform:translateX(-10px);}75%{transform:translateX(10px);}}
 
 /* ---------- Botões de controle (som + música) no canto ---------- */
 .controles{position:absolute;top:12px;right:12px;z-index:5;display:flex;gap:8px;}
@@ -315,29 +353,120 @@ h2{font-size:clamp(1.3rem,5vw,1.7rem);color:var(--verde-escuro);text-align:cente
 
 /* ---------- Modal "Como jogar" ---------- */
 .modal-fundo{
-  display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);
+  display:none;position:fixed;inset:0;background:rgba(0,0,0,0.3);
   z-index:50;align-items:center;justify-content:center;padding:18px;
+  backdrop-filter:blur(10px);
 }
-.modal-fundo.ativo{display:flex;animation:entra .3s;}
-.modal{background:#fff;border-radius:18px;padding:24px;max-width:420px;width:100%;}
-.modal h2{margin-bottom:10px;}
-.modal ul{margin:10px 0 4px;padding-left:20px;line-height:1.6;}
-.modal li{margin-bottom:6px;}
+.modal-fundo.ativo{display:flex;animation:fadeUp 0.4s ease;}
+.modal{
+  background:rgba(255,255,255,0.9);border-radius:var(--raio);padding:30px;
+  max-width:440px;width:100%;box-shadow:var(--sombra);
+  border:1px solid rgba(255,255,255,0.5);
+}
 
 /* Confete */
-.confete{position:absolute;width:10px;height:14px;top:-20px;z-index:20;border-radius:2px;pointer-events:none;animation:cai linear forwards;}
+.confete{position:absolute;width:12px;height:12px;top:-20px;z-index:20;border-radius:50%;pointer-events:none;animation:cai linear forwards;}
 @keyframes cai{
-  to{transform:translateY(220px) rotate(360deg);opacity:0;}
+  0%{transform:translateY(0) rotate(0deg);opacity:1;}
+  100%{transform:translateY(500px) rotate(720deg);opacity:0;}
 }
 
-/* Ajustes responsivos para telas bem pequenas */
-@media (max-width:360px){
-  .tela{padding:18px 14px 22px;}
-  .alt{font-size:1rem;}
+/* Camada de "folhas" flutuantes */
+#folhas{position:fixed;inset:0;pointer-events:none;z-index:0;overflow:hidden;}
+#folhas span{
+  position:absolute;top:-50px;font-size:30px;opacity:0.6;
+  animation:cair-folha linear infinite;filter:drop-shadow(0 5px 10px rgba(0,0,0,0.1));
+}
+@keyframes cair-folha{
+  0%{transform:translateY(-50px) translateX(0) rotate(0deg);}
+  25%{transform:translateY(25vh) translateX(50px) rotate(90deg);}
+  50%{transform:translateY(50vh) translateX(-50px) rotate(180deg);}
+  75%{transform:translateY(75vh) translateX(50px) rotate(270deg);}
+  100%{transform:translateY(105vh) translateX(0) rotate(360deg);}
 }
 </style>
 </head>
 <body>
+
+<!-- Sol decorativo animado -->
+<div class="sol-container">
+  <div class="sol"></div>
+</div>
+
+<!-- Personagem Minhoco Premium -->
+<div id="personagem-wrap">
+  <div id="balao-fala" class="balao-fala">Olá! Sou o Minhoco. Pronto para limpar a Terra?</div>
+  <svg class="minhoco" viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg">
+    <!-- Sombra projetada -->
+    <ellipse cx="60" cy="110" rx="40" ry="10" fill="rgba(0,0,0,0.1)" />
+    <!-- Corpo Segmentado -->
+    <g id="minhoco-corpo-grupo">
+      <path id="corpo-path" d="M30,90 Q45,70 60,90 T90,90" fill="none" stroke="#ff8a80" stroke-width="18" stroke-linecap="round" />
+      <!-- Cabeça -->
+      <g id="minhoco-cabeca">
+        <circle cx="30" cy="90" r="14" fill="#ff8a80" />
+        <!-- Olhos -->
+        <g id="minhoco-olhos">
+          <circle class="olho-branco" cx="24" cy="88" r="5" fill="white" />
+          <circle class="pupila" cx="24" cy="88" r="2.5" fill="#333" />
+          <circle class="olho-branco" cx="36" cy="88" r="5" fill="white" />
+          <circle class="pupila" cx="36" cy="88" r="2.5" fill="#333" />
+        </g>
+        <!-- Boca -->
+        <path id="minhoco-boca" d="M25,95 Q30,100 35,95" fill="none" stroke="#b71c1c" stroke-width="2" stroke-linecap="round" />
+      </g>
+    </g>
+  </svg>
+</div>
+
+<!-- Cena de Bar e Amigos Sertanejos -->
+<div class="cena-bar">
+  <svg width="250" height="150" viewBox="0 0 250 150" xmlns="http://www.w3.org/2000/svg">
+    <!-- Mesa de Bar -->
+    <rect x="70" y="100" width="110" height="10" rx="5" fill="#5d4037" />
+    <rect x="90" y="110" width="10" height="40" fill="#3e2723" />
+    <rect x="150" y="110" width="10" height="40" fill="#3e2723" />
+    
+    <!-- Amigos Bebendo (Personagens bonitinhos) -->
+    <g class="amigos-bebendo">
+      <!-- Amigo 1 -->
+      <circle cx="85" cy="85" r="15" fill="#ffe0b2" />
+      <path d="M75,100 Q85,110 95,100" fill="#3f51b5" />
+      <rect x="80" y="75" width="10" height="5" rx="2" fill="#5d4037" /> <!-- Chapéu sutil -->
+      <rect x="90" y="85" width="8" height="15" rx="2" fill="#ffb300" /> <!-- Copo -->
+      
+      <!-- Amigo 2 -->
+      <circle cx="125" cy="80" r="15" fill="#ffccbc" />
+      <path d="M115,95 Q125,105 135,95" fill="#4caf50" />
+      <rect x="130" y="80" width="8" height="15" rx="2" fill="#ffb300" /> <!-- Copo -->
+      
+      <!-- Amigo 3 -->
+      <circle cx="165" cy="85" r="15" fill="#d7ccc8" />
+      <path d="M155,100 Q165,110 175,100" fill="#e91e63" />
+      <rect x="160" y="85" width="8" height="15" rx="2" fill="#ffb300" /> <!-- Copo -->
+    </g>
+
+    <!-- Músico Tocando Violão -->
+    <g class="pensonagem-sertanejo">
+      <circle cx="210" cy="80" r="18" fill="#ffe0b2" />
+      <rect x="195" y="70" width="30" height="10" rx="5" fill="#3e2723" /> <!-- Chapéu Sertanejo -->
+      <path d="M200,98 L220,98 L210,140 Z" fill="#795548" /> <!-- Corpo -->
+      <!-- Violão -->
+      <g transform="translate(195, 95) rotate(-20)">
+        <ellipse cx="15" cy="10" rx="15" ry="10" fill="#a1887f" />
+        <rect x="10" y="-10" width="5" height="20" fill="#5d4037" />
+        <path d="M0,10 Q15,15 30,10" stroke="#3e2723" stroke-width="1" fill="none" />
+      </g>
+    </g>
+    
+    <!-- Nota musical saindo do violão -->
+    <text x="220" y="60" font-size="20" fill="#5d4037" opacity="0.6">
+      ♫
+      <animate attributeName="y" values="60;40;60" dur="2s" repeatCount="indefinite" />
+      <animate attributeName="opacity" values="0.6;0;0.6" dur="2s" repeatCount="indefinite" />
+    </text>
+  </svg>
+</div>
 
 <!-- Música de fundo (arquivo escolhido pelo usuário), em loop -->
 <audio id="musicaFundo" src="musica.mp3" loop preload="auto"></audio>
@@ -647,15 +776,75 @@ function embaralhar(arr){
   return a;
 }
 
-// Troca a tela visível
+// Troca a tela visível com GSAP
 function mostrarTela(id){
-  document.querySelectorAll('.tela').forEach(t=>t.classList.remove('ativa'));
-  document.getElementById(id).classList.add('ativa');
+  const telas = document.querySelectorAll('.tela');
+  const atual = document.querySelector('.tela.ativa');
+  const proxima = document.getElementById(id);
+
+  if(atual) {
+    gsap.to(atual, { 
+      opacity: 0, 
+      y: -20, 
+      duration: 0.3, 
+      onComplete: () => {
+        atual.classList.remove('ativa');
+        proxima.classList.add('ativa');
+        gsap.fromTo(proxima, 
+          { opacity: 0, y: 20 },
+          { opacity: 1, y: 0, duration: 0.5, ease: "power2.out" }
+        );
+      }
+    });
+  } else {
+    proxima.classList.add('ativa');
+    gsap.fromTo(proxima, { opacity: 0, y: 20 }, { opacity: 1, y: 0, duration: 0.5 });
+  }
 }
 
-/* ===================================================================
-   ÁUDIO (Web Audio API) — sons simples gerados na hora
-   =================================================================== */
+// Efeito de Confete Luxo
+function lancarConfeteLuxo(){
+  confetti({
+    particleCount: 150,
+    spread: 70,
+    origin: { y: 0.6 },
+    colors: ['#70e000', '#9ef01a', '#38b000', '#ffcc00']
+  });
+}
+
+function finalizarJogo(){
+  const totalEstrelas = estado.estrelasPorFase.reduce((a,b)=>a+b,0);
+  document.getElementById('finalAcertos').textContent = estado.acertos;
+  document.getElementById('finalPontos').textContent = estado.pontos;
+  document.getElementById('finalEstrelas').textContent = totalEstrelas;
+
+  document.getElementById('cenaSoloFinal').innerHTML = montarCenaSolo(estado.acertos);
+
+  const elEstrelas = document.getElementById('estrelasFinal');
+  elEstrelas.innerHTML = '';
+  elEstrelas.textContent = '⭐'.repeat(totalEstrelas) + '☆'.repeat(9-totalEstrelas);
+
+  let msg, icone;
+  if(estado.acertos >= 11){
+    msg = "🌳 Incrível! Você é um(a) Guardião(ã) do Solo! A terra está cheia de vida graças a você!";
+    icone = "🏆";
+    lancarConfeteLuxo();
+  }else if(estado.acertos >= 8){
+    msg = "🌿 Muito bem! Você entende bastante sobre cuidar do solo. Continue assim!";
+    icone = "🌳";
+    lancarConfeteLuxo();
+  }else if(estado.acertos >= 5){
+    msg = "🌱 Bom começo! Você já plantou boas ideias. Que tal jogar de novo para aprender mais?";
+    icone = "🌱";
+  }else{
+    msg = "🌾 O solo precisa de você! Reveja o conteúdo e tente novamente para deixá-lo bem verdinho.";
+    icone = "🚜";
+  }
+  document.getElementById('mensagemFinal').textContent = msg;
+  document.getElementById('iconeFinal').textContent = icone;
+
+  mostrarTela('tela-final');
+}
 function garantirAudio(){
   if(!audioCtx){
     try{ audioCtx = new (window.AudioContext||window.webkitAudioContext)(); }catch(e){ audioCtx=null; }
@@ -727,14 +916,60 @@ function alternarMusica(){
 function abrirComoJogar(){ document.getElementById('modalComoJogar').classList.add('ativo'); }
 function fecharComoJogar(){ document.getElementById('modalComoJogar').classList.remove('ativo'); }
 
+/* ---------- Personagem Minhoco Interações Profissionais com GSAP ---------- */
+function initMinhocoAnims(){
+  gsap.to("#minhoco-corpo-grupo", {
+    y: -8,
+    duration: 2,
+    repeat: -1,
+    yoyo: true,
+    ease: "power1.inOut"
+  });
+  
+  // Piscar de olhos
+  setInterval(() => {
+    gsap.to(".olho-branco", { scaleY: 0.1, duration: 0.1, yoyo: true, repeat: 1, transformOrigin: "center" });
+  }, 4000);
+
+  // Seguimento do mouse (sutil)
+  document.addEventListener("mousemove", (e) => {
+    const x = (e.clientX / window.innerWidth - 0.5) * 15;
+    const y = (e.clientY / window.innerHeight - 0.5) * 15;
+    gsap.to("#minhoco-olhos", { x, y, duration: 0.5 });
+  });
+}
+
+function falaMinhoco(texto, duracao = 3500){
+  const balao = document.getElementById('balao-fala');
+  balao.textContent = texto;
+  
+  gsap.fromTo(balao, 
+    { opacity: 0, y: 20, scale: 0.8 },
+    { opacity: 1, y: 0, scale: 1, duration: 0.5, ease: "back.out(1.7)" }
+  );
+
+  clearTimeout(window.timerMinhoco);
+  window.timerMinhoco = setTimeout(() => {
+    gsap.to(balao, { opacity: 0, y: 10, scale: 0.9, duration: 0.4 });
+  }, duracao);
+}
+
+function animarMinhoco(tipo){
+  if(tipo === 'pula') {
+    gsap.to("#personagem-wrap", { y: -40, rotation: 10, duration: 0.3, yoyo: true, repeat: 1, ease: "power2.out" });
+    gsap.to("#minhoco-boca", { d: "M22,98 Q30,105 38,98", duration: 0.3 }); // Sorriso maior
+  } else if(tipo === 'treme') {
+    gsap.to("#personagem-wrap", { x: 15, duration: 0.1, repeat: 5, yoyo: true });
+    gsap.to("#minhoco-boca", { d: "M25,100 Q30,95 35,100", duration: 0.3 }); // Boca triste
+  }
+}
+
 /* ===================================================================
    CENA DO SOLO — desenhada em SVG, evolui conforme os acertos
    nivel: nº de acertos já feitos (0 a TOTAL_PERGUNTAS)
    =================================================================== */
 function corDaTerra(nivel){
-  // De terra seca/clara (poluída) para terra úmida e fértil (escura)
   const t = Math.min(nivel/TOTAL_PERGUNTAS,1);
-  // interpola entre #b58b6e (seco) e #5d4037 (fértil)
   const c1=[181,139,110], c2=[93,64,55];
   const r=Math.round(c1[0]+(c2[0]-c1[0])*t);
   const g=Math.round(c1[1]+(c2[1]-c1[1])*t);
@@ -742,16 +977,12 @@ function corDaTerra(nivel){
   return `rgb(${r},${g},${b})`;
 }
 
-// Gera o HTML/SVG da cena para um dado nível de "limpeza" do solo
 function montarCenaSolo(nivel){
-  const totalPlantas = 7;                 // plantinhas distribuídas no solo
+  const totalPlantas = 7;
   const plantasVisiveis = Math.round((nivel/TOTAL_PERGUNTAS)*totalPlantas);
   const t = nivel/TOTAL_PERGUNTAS;
 
-  // Sol que fica mais brilhante conforme melhora
   const solOpac = 0.4 + 0.6*t;
-
-  // Posições fixas das plantas (x em %, base do gramado)
   const posicoes = [8,22,36,50,64,78,92];
   const emojisPlanta = ['🌱','🌿','🍀','🌾','🌻','🌷','🌳'];
 
@@ -759,31 +990,35 @@ function montarCenaSolo(nivel){
   posicoes.forEach((x,i)=>{
     const visivel = i < plantasVisiveis ? 'visivel balanca' : '';
     const emoji = emojisPlanta[i % emojisPlanta.length];
-    const tam = 22 + (i%3)*4;
+    const tam = 28 + (i%3)*6;
     plantasSVG += `<text x="${x}%" y="118" class="planta ${visivel}"
-        style="transition-delay:${i*0.08}s" font-size="${tam}"
+        style="transition-delay:${i*0.1}s" font-size="${tam}"
         text-anchor="middle" dominant-baseline="auto">${emoji}</text>`;
   });
 
-  // Lixo que vai sumindo (quanto maior o nível, mais transparente / menos lixo)
-  const lixoOpac = Math.max(0, 1 - t*1.3);
-  const lixos = ['🗑️','🛢️','🦟','♨️'];
+  const lixoOpac = Math.max(0, 1 - t*1.5);
+  const lixos = ['🗑️','🛢️','🦟','☢️'];
   let lixoSVG = '';
-  [12,40,66,86].forEach((x,i)=>{
-    // some um lixo a cada acerto, da esquerda pra direita
-    const some = i < Math.floor(t*4) ? 0 : lixoOpac;
-    lixoSVG += `<text x="${x}%" y="112" class="lixo" style="opacity:${some.toFixed(2)}"
-        font-size="20" text-anchor="middle">${lixos[i]}</text>`;
+  [15,35,60,85].forEach((x,i)=>{
+    const some = i < Math.floor(t*4.5) ? 0 : lixoOpac;
+    lixoSVG += `<text x="${x}%" y="112" class="lixo" style="opacity:${some.toFixed(2)}; filter:grayscale(${t.toFixed(2)})"
+        font-size="24" text-anchor="middle">${lixos[i]}</text>`;
   });
 
   return `
-    <svg viewBox="0 0 300 130" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">
-      <!-- Sol -->
-      <circle cx="262" cy="30" r="18" fill="#ffd54f" opacity="${solOpac.toFixed(2)}"/>
-      <!-- Faixa de terra -->
+    <svg viewBox="0 0 300 130" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg" style="border-radius:18px; overflow:hidden;">
+      <defs>
+        <linearGradient id="gradCeu" x1="0%" y1="0%" x2="0%" y2="100%">
+          <stop offset="0%" style="stop-color:#80deea;stop-opacity:1" />
+          <stop offset="100%" style="stop-color:#e0f7fa;stop-opacity:1" />
+        </linearGradient>
+      </defs>
+      <rect width="300" height="130" fill="url(#gradCeu)" />
+      <circle cx="262" cy="30" r="18" fill="#ffd54f" opacity="${solOpac.toFixed(2)}">
+        <animate attributeName="r" values="18;20;18" dur="3s" repeatCount="indefinite" />
+      </circle>
       <rect id="faixaTerra" x="0" y="95" width="300" height="35" fill="${corDaTerra(nivel)}"/>
-      <!-- Gramado por cima da terra, cresce com o nível -->
-      <rect x="0" y="95" width="300" height="${(3+12*t).toFixed(1)}" fill="#6abf4b" opacity="${t.toFixed(2)}"/>
+      <rect x="0" y="90" width="300" height="${(5+15*t).toFixed(1)}" fill="#6abf4b" opacity="${t.toFixed(2)}"/>
       ${lixoSVG}
       ${plantasSVG}
     </svg>`;
@@ -843,11 +1078,14 @@ function abrirTransicao(indiceFase){
   document.getElementById('transicaoTitulo').textContent = `Fase ${indiceFase+1}: ${fase.nome}`;
   document.getElementById('transicaoTexto').textContent = fase.descricao;
   mostrarTela('tela-transicao');
+  
+  falaMinhoco(`Vamos para a Fase ${indiceFase+1}! Prepare-se!`, 4000);
 }
 
 function iniciarPerguntasDaFase(){
   mostrarTela('tela-pergunta');
   carregarPergunta();
+  falaMinhoco("Preste atenção na pergunta! Boa sorte!", 3000);
 }
 
 /* ===================================================================
@@ -906,12 +1144,11 @@ function atualizarIndicadorCombo(){
 }
 
 function responder(botao, idxEscolhido, perg){
-  if(estado.respondida) return;       // evita responder duas vezes
+  if(estado.respondida) return;       
   estado.respondida = true;
   garantirAudio();
 
   const cont = document.getElementById('alternativas');
-  // bloqueia todas as alternativas
   cont.querySelectorAll('.alt').forEach(b=>b.classList.add('bloqueada'));
 
   const acertou = idxEscolhido === perg.correta;
@@ -922,39 +1159,43 @@ function responder(botao, idxEscolhido, perg){
     estado.acertos++;
     estado.acertosNaFase++;
     estado.combo++;
-    // pontuação: base + bônus por combo (a partir da 2ª seguida)
     let ganho = PONTOS_BASE + (estado.combo>=2 ? (estado.combo-1)*BONUS_COMBO : 0);
     estado.pontos += ganho;
     animarPontos(ganho);
     tocarAcerto();
-    atualizarCenaSolo();      // o solo melhora!
+    atualizarCenaSolo();      
     lancarConfete(botao);
     fb.className = 'feedback ok';
     fb.innerHTML = `<b>✅ Correto!</b>${perg.feedback}`;
+    
+    // Interação Minhoco
+    falaMinhoco(["Boa!", "Isso aí!", "Incrível!", "Mandou bem!", "Uau!"][Math.floor(Math.random()*5)]);
+    animarMinhoco('pula');
+
   }else{
     botao.classList.add('errada');
-    estado.combo = 0;          // perde a sequência
+    estado.combo = 0;          
     tocarErro();
-    // mostra a alternativa correta em verde
     cont.querySelectorAll('.alt').forEach(b=>{
       const span = b.querySelector('span:last-child');
       if(span && span.textContent === perg.alternativas[perg.correta]){
         b.classList.add('correta');
       }
     });
-    // tremida na tela
     const jogo = document.getElementById('jogo');
     jogo.classList.add('shake');
     setTimeout(()=>jogo.classList.remove('shake'),400);
     fb.className = 'feedback no';
     fb.innerHTML = `<b>❌ Resposta correta: ${perg.alternativas[perg.correta]}</b>${perg.feedback}`;
+    
+    // Interação Minhoco
+    falaMinhoco("Poxa, essa era difícil! Mas não desista!", 4000);
+    animarMinhoco('treme');
   }
 
-  // atualiza placar e combo
   document.getElementById('placarPontos').textContent = estado.pontos;
   atualizarIndicadorCombo();
 
-  // botão para avançar
   const btn = document.getElementById('btnProxima');
   const ultimaDaFase = estado.perguntaAtual === 3;
   btn.textContent = ultimaDaFase ? 'VER RESULTADO DA FASE ▶' : 'PRÓXIMA ▶';
@@ -975,18 +1216,12 @@ function animarPontos(qtd){
 
 // Confete suave saindo da alternativa correta
 function lancarConfete(origem){
-  const jogo = document.getElementById('jogo');
-  const cores = ['#4caf50','#ffd54f','#7cc36a','#ff9800','#2e7d32'];
-  for(let i=0;i<14;i++){
-    const c = document.createElement('div');
-    c.className = 'confete';
-    c.style.background = cores[i%cores.length];
-    c.style.left = (10 + Math.random()*80) + '%';
-    c.style.animationDuration = (1 + Math.random()*0.8) + 's';
-    c.style.top = '40%';
-    jogo.appendChild(c);
-    setTimeout(()=>c.remove(),1800);
-  }
+  confetti({
+    particleCount: 40,
+    spread: 50,
+    origin: { y: 0.7 },
+    colors: ['#70e000', '#ffcc00']
+  });
 }
 
 function proximaPergunta(){
@@ -1109,12 +1344,14 @@ function reiniciarJogo(){
   estado = estadoInicial();
   garantirAudio();
   irParaMapa();
+  falaMinhoco("Eba! Vamos tentar de novo? Eu acredito em você!", 5000);
 }
 
 /* ===================================================================
    INÍCIO
    =================================================================== */
 estado = estadoInicial();
+initMinhocoAnims();
 // fecha o modal ao clicar fora dele
 document.getElementById('modalComoJogar').addEventListener('click', e=>{
   if(e.target.id === 'modalComoJogar') fecharComoJogar();
