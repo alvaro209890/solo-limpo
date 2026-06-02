@@ -70,6 +70,7 @@ body{
   position:fixed;bottom:20px;left:40px;z-index:10;
   display:flex;flex-direction:column;align-items:center;
   pointer-events:none;transition:transform 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  transform-origin: bottom left;
 }
 .balao-fala{
   background:white;padding:12px 18px;border-radius:20px;
@@ -92,6 +93,7 @@ body{
   position:fixed;bottom:20px;right:20px;z-index:0;
   display:flex;flex-direction:column;align-items:center;
   pointer-events:none;opacity:0.9;
+  transform-origin: bottom right;
 }
 .mesa-bar{
   filter:drop-shadow(0 5px 15px rgba(0,0,0,0.1));
@@ -110,6 +112,37 @@ body{
 @keyframes brinde{
   0%,100%{transform:translateY(0);}
   50%{transform:translateY(-5px);}
+}
+
+/* ===================================================================
+   RESPONSIVIDADE MOBILE (Correção de Bugs)
+   =================================================================== */
+@media (max-width: 850px) {
+  #personagem-wrap { left: 15px; bottom: 15px; transform: scale(0.8); }
+  .cena-bar { right: 10px; bottom: 10px; transform: scale(0.7); opacity: 0.6; }
+  .sol-container { top: 20px; right: 20px; transform: scale(0.8); }
+}
+
+@media (max-width: 600px) {
+  body { padding: 12px; }
+  #jogo { border-radius: 25px; }
+  .tela { padding: 20px; }
+  h1 { font-size: 2.8rem; }
+  
+  /* Esconde cena de fundo complexa em telas muito pequenas para não poluir */
+  .cena-bar { display: none; }
+  
+  /* Minhoco menor e mais no canto */
+  #personagem-wrap { transform: scale(0.65); left: 5px; bottom: 5px; }
+  .balao-fala { font-size: 0.8rem; max-width: 150px; }
+  
+  .sol-container { transform: scale(0.5); top: 5px; right: 5px; }
+}
+
+@media (max-width: 400px) {
+    h1 { font-size: 2.2rem; }
+    .btn.grande { font-size: 1.2rem; min-height: 60px; }
+    .enunciado { font-size: 1.1rem; }
 }
 #jogo{
   width:100%;
@@ -1074,6 +1107,15 @@ function abrirTransicao(indiceFase){
   estado.perguntaAtual = 0;
   estado.acertosNaFase = 0;
   const fase = FASES[indiceFase];
+  
+  // Efeito de cor de fundo mudando conforme a fase (Dia -> Tarde -> Noite/Limpo)
+  const coresFundo = [
+    "linear-gradient(135deg,#a2d2ff 0%,#ccffaf 100%)", // Dia
+    "linear-gradient(135deg,#ff9e00 0%,#ff5400 100%)", // Tarde
+    "linear-gradient(135deg,#1a2e1a 0%,#38b000 100%)"  // Noite/Verde profundo
+  ];
+  gsap.to("body", { background: coresFundo[indiceFase], duration: 1.5 });
+
   document.getElementById('transicaoIcone').textContent = fase.icone;
   document.getElementById('transicaoTitulo').textContent = `Fase ${indiceFase+1}: ${fase.nome}`;
   document.getElementById('transicaoTexto').textContent = fase.descricao;
@@ -1166,7 +1208,17 @@ function responder(botao, idxEscolhido, perg){
     atualizarCenaSolo();      
     lancarConfete(botao);
     fb.className = 'feedback ok';
-    fb.innerHTML = `<b>✅ Correto!</b>${perg.feedback}`;
+    
+    // Curiosidade extra para acerto
+    const curiosidades = [
+      "Sabia que 1 colher de solo saudável tem mais seres vivos que pessoas na Terra?",
+      "A minhoca é a melhor amiga do solo: ela o ara e fertiliza naturalmente!",
+      "O solo leva até 500 anos para formar apenas 2 centímetros de camada fértil.",
+      "Florestas ajudam o solo a 'beber' a água da chuva, evitando enchentes."
+    ];
+    const dica = curiosidades[Math.floor(Math.random()*curiosidades.length)];
+    
+    fb.innerHTML = `<b>✅ Correto!</b>${perg.feedback}<br><br><small><i>💡 <b>Você sabia?</b> ${dica}</i></small>`;
     
     // Interação Minhoco
     falaMinhoco(["Boa!", "Isso aí!", "Incrível!", "Mandou bem!", "Uau!"][Math.floor(Math.random()*5)]);
@@ -1186,7 +1238,7 @@ function responder(botao, idxEscolhido, perg){
     jogo.classList.add('shake');
     setTimeout(()=>jogo.classList.remove('shake'),400);
     fb.className = 'feedback no';
-    fb.innerHTML = `<b>❌ Resposta correta: ${perg.alternativas[perg.correta]}</b>${perg.feedback}`;
+    fb.innerHTML = `<b>❌ Resposta correta: ${perg.alternativas[perg.correta]}</b>${perg.feedback}<br><br><small><i>⚠️ Não desanime! O solo precisa da sua ajuda para se recuperar.</i></small>`;
     
     // Interação Minhoco
     falaMinhoco("Poxa, essa era difícil! Mas não desista!", 4000);
